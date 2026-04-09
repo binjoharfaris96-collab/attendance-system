@@ -1,12 +1,13 @@
 import { CameraTestPanel } from "@/components/camera-test-panel";
 import { getSetting, listStudents } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
-export default function RecognitionPage() {
+export default async function RecognitionPage() {
   const allStudents = listStudents();
   const unknownFaceAlertsEnabled =
     getSetting("alerts_unknown_face_enabled", "true") === "true";
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
   
   // Filter out students who haven't completed face registration

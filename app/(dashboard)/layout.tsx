@@ -8,9 +8,9 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopWeatherCard } from "@/components/top-weather-card";
 import { requireSession } from "@/lib/auth";
-import { countPhoneDetections, countUnknownFaces, getSetting } from "@/lib/db";
+import { countPhoneDetections, countUnknownFaces } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
-import { getAppLanguage } from "@/lib/i18n-server";
+import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +42,7 @@ export default async function DashboardLayout({
   const warningCount = countUnknownFaces();
   const phoneCount = countPhoneDetections();
   const lang = await getAppLanguage();
-  const initialTheme = getSetting("theme_preference", "dark") === "light" ? "light" : "dark";
+  const initialTheme = await getThemePreference();
   const t = createTranslator(lang);
 
   return (
@@ -53,7 +53,7 @@ export default async function DashboardLayout({
             <DynamicPageTitle initialLang={lang} />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             <div className="hidden 2xl:block">
               <TopWeatherCard />
             </div>
@@ -107,8 +107,8 @@ export default async function DashboardLayout({
               {session.email.charAt(0).toUpperCase()}
             </div>
 
-            <ThemeToggle initialTheme={initialTheme} />
-            <LanguageToggle initialLanguage={lang} />
+            <ThemeToggle initialTheme={initialTheme} className="shrink-0" />
+            <LanguageToggle initialLanguage={lang} className="shrink-0" />
           </div>
         </div>
       }
@@ -166,6 +166,10 @@ export default async function DashboardLayout({
           </nav>
 
           <div className="mt-4 border-t border-[var(--sidebar-border)] pt-4">
+            <div className="mb-4 grid grid-cols-2 gap-2 lg:hidden">
+              <ThemeToggle initialTheme={initialTheme} className="w-full" />
+              <LanguageToggle initialLanguage={lang} compact className="w-full px-3" />
+            </div>
             <div className="space-y-1.5">
               <NavLink
                 href="/help"

@@ -1,14 +1,15 @@
 import { ExamMonitorPanel } from "@/components/exam-monitor-panel";
 import { getSetting, listStudents } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
-export default function ExamMonitorPage() {
+export default async function ExamMonitorPage() {
   const allStudents = listStudents();
   const unknownFaceAlertsEnabled =
     getSetting("alerts_unknown_face_enabled", "true") === "true";
   const phoneDetectionAlertsEnabled =
     getSetting("alerts_phone_detection_enabled", "true") === "true";
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
   
   // Filter out students who haven't completed face registration

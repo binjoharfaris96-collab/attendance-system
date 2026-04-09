@@ -1,7 +1,8 @@
 import { AttendanceLogTable } from "@/components/attendance-log-table";
-import { listRecentAttendance, listStudents, getSetting } from "@/lib/db";
+import { listRecentAttendance, listStudents } from "@/lib/db";
 import { toAttendanceDate } from "@/lib/time";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function AttendancePage() {
   const attendance = listRecentAttendance(50);
@@ -10,7 +11,7 @@ export default async function AttendancePage() {
   const studentPhotoById = Object.fromEntries(
     students.map((student) => [student.id, student.photoUrl]),
   );
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   return (

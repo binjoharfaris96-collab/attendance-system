@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 
 import { StudentEditForm, StudentDeleteForm } from "@/components/student-edit-form";
 import { StudentFaceUpdate } from "@/components/student-face-update";
-import { getSetting, getStudentById, listAttendanceForStudent, listMisbehaviorReportsForStudent, listStudents } from "@/lib/db";
+import { getStudentById, listAttendanceForStudent, listMisbehaviorReportsForStudent, listStudents } from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { updateDisciplinaryEventAction } from "@/app/actions/students";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 function translateIssueTypeLabel(issueType: string, t: (key: string) => string) {
   const map: Record<string, string> = {
@@ -79,7 +80,7 @@ export default async function StudentDetailPage({
 
   const attendance = listAttendanceForStudent(studentId, 20);
   const behaviorReports = listMisbehaviorReportsForStudent(studentId, 15);
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   const absDays = calculateAbsentDays(student.createdAt, presentCount);

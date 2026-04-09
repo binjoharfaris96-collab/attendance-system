@@ -4,10 +4,9 @@ import { AttendanceTrendChart } from "@/components/attendance-trend-chart";
 import {
   getDashboardSummary,
   getDailyAttendanceCounts,
-  getSetting,
   listStudents,
 } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";

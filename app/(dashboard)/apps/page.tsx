@@ -1,5 +1,6 @@
 import { getSetting } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 import { AppsHubClient } from "./apps-hub-client";
 import styles from "./styles.module.css";
 
@@ -113,8 +114,8 @@ function parseCustomApps(raw: string): SavedCustomApp[] {
   }
 }
 
-export default function AppsPage() {
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+export default async function AppsPage() {
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
   const initialCustomApps = parseCustomApps(getSetting("custom_apps", "[]"));
 

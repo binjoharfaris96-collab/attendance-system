@@ -1,12 +1,13 @@
 import Link from "next/link";
 
 import { StudentAddModal } from "@/components/student-add-modal";
-import { listStudents, getSetting } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { listStudents } from "@/lib/db";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function StudentsPage() {
   const students = listStudents();
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   return (

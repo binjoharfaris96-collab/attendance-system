@@ -1,11 +1,12 @@
 import { formatDateTime } from "@/lib/time";
-import { listUnknownFaces, clearUnknownFaces, getSetting } from "@/lib/db";
+import { listUnknownFaces, clearUnknownFaces } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function WarningsPage() {
   const faces = listUnknownFaces(50);
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   async function clearLogsAction() {

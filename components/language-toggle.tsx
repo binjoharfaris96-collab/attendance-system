@@ -4,13 +4,38 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { t, type AppLanguage } from "@/lib/i18n";
 
-export function LanguageToggle({ initialLanguage }: { initialLanguage: AppLanguage }) {
+function applyLanguage(nextLanguage: AppLanguage) {
+  const html = document.documentElement;
+  html.setAttribute("lang", nextLanguage);
+  html.setAttribute("dir", nextLanguage === "ar" ? "rtl" : "ltr");
+  document.cookie = `app_language=${nextLanguage}; path=/; max-age=31536000; samesite=lax`;
+
+  try {
+    window.localStorage.setItem("app_language", nextLanguage);
+  } catch {
+    // Ignore storage failures in constrained environments.
+  }
+}
+
+export function LanguageToggle({
+  initialLanguage,
+  compact = false,
+  className = "",
+}: {
+  initialLanguage: AppLanguage;
+  compact?: boolean;
+  className?: string;
+}) {
   const router = useRouter();
   const [language, setLanguage] = useState<AppLanguage>(initialLanguage);
   const nextLanguageLabel =
-    language === "en"
-      ? t("settings.languageArabic", "ar")
-      : t("settings.languageEnglish", "en");
+    compact
+      ? language === "en"
+        ? "AR"
+        : "EN"
+      : language === "en"
+        ? t("settings.languageArabic", "ar")
+        : t("settings.languageEnglish", "en");
 
   useEffect(() => {
     // Sync with HTML lang attribute if changed elsewhere.
@@ -29,12 +54,7 @@ export function LanguageToggle({ initialLanguage }: { initialLanguage: AppLangua
   const toggleLanguage = async () => {
     const nextLanguage = language === "en" ? "ar" : "en";
     setLanguage(nextLanguage);
-
-    // Apply immediate UI changes.
-    const html = document.documentElement;
-    html.setAttribute("lang", nextLanguage);
-    html.setAttribute("dir", nextLanguage === "ar" ? "rtl" : "ltr");
-    document.cookie = `app_language=${nextLanguage}; path=/; max-age=31536000; samesite=lax`;
+    applyLanguage(nextLanguage);
 
     // Persist to DB.
     try {
@@ -53,7 +73,7 @@ export function LanguageToggle({ initialLanguage }: { initialLanguage: AppLangua
   return (
     <button
       onClick={toggleLanguage}
-      className="flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--surface-1)] px-4 text-xs font-bold text-[var(--color-ink)] transition-all hover:bg-[var(--surface-2)] active:scale-95"
+      className={`flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--surface-1)] px-4 text-xs font-bold text-[var(--color-ink)] transition-all hover:bg-[var(--surface-2)] active:scale-95 ${className}`.trim()}
       aria-label={t("settings.language", language)}
     >
       <svg
@@ -72,7 +92,7 @@ export function LanguageToggle({ initialLanguage }: { initialLanguage: AppLangua
         <line x1="2" y1="12" x2="22" y2="12" />
         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
       </svg>
-      <span dir={language === "ar" ? "rtl" : "ltr"}>{nextLanguageLabel}</span>
+      <span dir="ltr">{nextLanguageLabel}</span>
     </button>
   );
 }

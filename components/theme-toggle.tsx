@@ -9,7 +9,26 @@ function detectThemeFromHtml(): ThemePreference {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
-export function ThemeToggle({ initialTheme }: { initialTheme: ThemePreference }) {
+function applyTheme(theme: ThemePreference) {
+  const html = document.documentElement;
+  html.classList.remove("dark", "light");
+  html.classList.add(theme);
+  document.cookie = `theme_preference=${theme}; path=/; max-age=31536000; samesite=lax`;
+
+  try {
+    window.localStorage.setItem("theme_preference", theme);
+  } catch {
+    // Ignore storage failures in constrained environments.
+  }
+}
+
+export function ThemeToggle({
+  initialTheme,
+  className = "",
+}: {
+  initialTheme: ThemePreference;
+  className?: string;
+}) {
   const [theme, setTheme] = useState<ThemePreference>(initialTheme);
   const [lang, setLang] = useState<AppLanguage>("en");
 
@@ -33,10 +52,7 @@ export function ThemeToggle({ initialTheme }: { initialTheme: ThemePreference })
   const toggleTheme = async () => {
     const nextTheme: ThemePreference = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
-
-    const html = document.documentElement;
-    html.classList.remove("dark", "light");
-    html.classList.add(nextTheme);
+    applyTheme(nextTheme);
 
     try {
       await fetch("/api/settings/batch", {
@@ -55,7 +71,7 @@ export function ThemeToggle({ initialTheme }: { initialTheme: ThemePreference })
     <button
       type="button"
       onClick={toggleTheme}
-      className="floating-action inline-flex h-10 w-10 items-center justify-center"
+      className={`floating-action inline-flex h-10 w-10 items-center justify-center ${className}`.trim()}
       aria-label={t("settings.themeMode", lang)}
       title={theme === "dark" ? t("settings.themeDark", lang) : t("settings.themeLight", lang)}
     >

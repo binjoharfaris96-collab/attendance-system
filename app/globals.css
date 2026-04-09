@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: dark;
+  --font-body: "Aptos", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
   --color-canvas: #081022;
   --color-panel: rgba(24, 40, 54, 0.58);

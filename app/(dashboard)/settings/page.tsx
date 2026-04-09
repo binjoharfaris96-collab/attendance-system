@@ -4,13 +4,14 @@ import { BackupRestorePanel } from "@/components/backup-restore-panel";
 import { AccountSettingsForm } from "@/components/account-settings-form";
 import { getAuthDefaults } from "@/lib/auth";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function SettingsPage() {
   const lateCutoffMinutes = getSetting("late_cutoff_minutes", "470");
   const checkInOpenMinutes = getSetting("check_in_open_minutes", "0");
   const checkInCloseMinutes = getSetting("check_in_close_minutes", "1439");
   const themePreference = getSetting("theme_preference", "dark");
-  const appLanguage = getSetting("app_language", "en");
+  const appLanguage = await getAppLanguage();
   const unknownFaceAlerts = getSetting("alerts_unknown_face_enabled", "true");
   const phoneDetectionAlerts = getSetting("alerts_phone_detection_enabled", "true");
   const backupInterval = getSetting("backup_interval", "weekly");

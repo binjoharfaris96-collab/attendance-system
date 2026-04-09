@@ -10,9 +10,24 @@ export async function getAppLanguage(): Promise<AppLanguage> {
     if (cookieLang === "ar" || cookieLang === "en") {
       return cookieLang as AppLanguage;
     }
-  } catch (e) {
+  } catch {
     // cookies() might throw in some environments, fallback to DB
   }
   
   return (getSetting("app_language", "en") as AppLanguage) || "en";
+}
+
+export async function getThemePreference(): Promise<"light" | "dark"> {
+  try {
+    const cookieStore = await cookies();
+    const cookieTheme = cookieStore.get("theme_preference")?.value;
+
+    if (cookieTheme === "light" || cookieTheme === "dark") {
+      return cookieTheme;
+    }
+  } catch {
+    // Fallback to DB when cookies are unavailable.
+  }
+
+  return getSetting("theme_preference", "dark") === "light" ? "light" : "dark";
 }

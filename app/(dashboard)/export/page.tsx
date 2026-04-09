@@ -1,8 +1,8 @@
-import { getSetting } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
-export default function ExportPage() {
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+export default async function ExportPage() {
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   return (

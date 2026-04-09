@@ -36,11 +36,11 @@ export function DashboardShell({
       <div className="shell-glow-layer opacity-85" />
       <div className="shell-dot-layer" />
 
-      <header className="fixed left-4 right-4 top-4 z-40 flex items-center gap-3 rtl:left-4 rtl:right-4 lg:left-6 lg:right-6">
+      <header className="pointer-events-none fixed left-4 right-4 top-4 z-40 flex items-center gap-3 rtl:left-4 rtl:right-4 lg:left-6 lg:right-6">
         <button
           type="button"
           onClick={() => setIsSidebarOpen((prev) => !prev)}
-          className="floating-action flex h-11 w-11 shrink-0 items-center justify-center lg:hidden"
+          className="floating-action pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center lg:hidden"
           aria-label={
             isSidebarOpen
               ? t("shell.closeNavigation", activeLang)
@@ -83,7 +83,7 @@ export function DashboardShell({
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div className="pointer-events-auto min-w-0 flex-1">
           {topbar}
         </div>
       </header>
@@ -111,7 +111,7 @@ export function DashboardShell({
         />
       ) : null}
 
-      <main className="relative z-10 px-4 pb-10 pt-[96px] sm:px-6 lg:pl-[286px] lg:rtl:pl-6 lg:rtl:pr-[286px] lg:pr-6 lg:pt-[110px]">
+      <main className="relative z-10 px-4 pb-10 pt-[112px] sm:px-6 lg:pl-[286px] lg:rtl:pl-6 lg:rtl:pr-[286px] lg:pr-6 lg:pt-[110px]">
         <div className="mx-auto w-full max-w-[1440px]">{children}</div>
       </main>
     </div>

@@ -2,8 +2,9 @@ import Link from "next/link";
 
 import { MisbehaviorForm } from "@/components/misbehavior-form";
 import { formatDateTime } from "@/lib/time";
-import { listRecentMisbehaviorReports, listStudents, getSetting } from "@/lib/db";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { listRecentMisbehaviorReports, listStudents } from "@/lib/db";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 function translateIssueTypeLabel(issueType: string, t: (key: string) => string) {
   const map: Record<string, string> = {
@@ -25,7 +26,7 @@ function translateIssueTypeLabel(issueType: string, t: (key: string) => string) 
 export default async function BehaviorPage() {
   const students = listStudents();
   const reports = listRecentMisbehaviorReports(60);
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   return (

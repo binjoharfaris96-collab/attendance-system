@@ -36,10 +36,29 @@ export async function POST(request: Request) {
     }
 
     revalidatePath("/", "layout");
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+
+    for (const update of updates) {
+      if (update.key === "app_language" && (update.value === "en" || update.value === "ar")) {
+        response.cookies.set("app_language", update.value, {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 365,
+          sameSite: "lax",
+        });
+      }
+
+      if (update.key === "theme_preference" && (update.value === "light" || update.value === "dark")) {
+        response.cookies.set("theme_preference", update.value, {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 365,
+          sameSite: "lax",
+        });
+      }
+    }
+
+    return response;
   } catch (error) {
     console.error("Failed to save settings batch via API:", error);
     return NextResponse.json({ success: false, error: "Failed to save settings" }, { status: 500 });
   }
 }
-

@@ -440,13 +440,6 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "camera.absent": { en: "Absent", ar: "الغائبون" },
   "camera.lates": { en: "Lates", ar: "المتأخرون" },
 
-  // â”€â”€ Export â”€â”€
-  "export.attendanceLogTitle": { en: "Attendance Log", ar: "سجل الحضور" },
-  "export.attendanceLogDesc": { en: "Export a complete history of all attendance events, including facial recognition scans, manual check-ins, and late occurrences.", ar: "تصدير سجل كامل لجميع أحداث الحضور، بما في ذلك مسح الوجه وتسجيل الحضور اليدوي وحالات التأخير." },
-  "export.downloadCsv": { en: "Download CSV", ar: "تنزيل CSV" },
-  "export.comingSoon": { en: "More exports coming soon", ar: "المزيد من خيارات التصدير قريباً" },
-  "export.comingSoonDesc": { en: "Future updates will include PDF report generation and active directory exports.", ar: "ستشمل التحديثات المستقبلية إنشاء تقارير PDF وتصدير الدليل النشط." },
-
   // â”€â”€ Help Center â”€â”€
   "help.title": { en: "Help Center", ar: "مركز المساعدة" },
   "help.subtitle": { en: "Encountered an issue? Select the type of problem below and describe what happened. Our support team will review it.", ar: "واجهت مشكلة؟ اختر نوع المشكلة أدناه وصف ما حدث. سوف يقوم فريق الدعم لدينا بمراجعتها." },

@@ -72,7 +72,7 @@ export function AppsHubClient({
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
 
-  const allApps = useMemo(
+  const allApps = useMemo<BuiltInApp[]>(
     () => [
       ...builtInApps,
       ...customApps.map((app) => ({
@@ -80,6 +80,7 @@ export function AppsHubClient({
         subtitleKey: "apps.customDesc",
         logoSrc: "",
         logoAlt: "",
+        logoClassName: undefined,
       })),
     ],
     [builtInApps, customApps],

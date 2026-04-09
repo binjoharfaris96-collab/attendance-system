@@ -56,6 +56,13 @@ function applyThemePreference(themePreference: ThemePreference) {
   const html = document.documentElement;
   html.classList.remove("dark", "light");
   html.classList.add(themePreference === "dark" ? "dark" : "light");
+  document.cookie = `theme_preference=${themePreference}; path=/; max-age=31536000; samesite=lax`;
+
+  try {
+    window.localStorage.setItem("theme_preference", themePreference);
+  } catch {
+    // Ignore storage failures in constrained environments.
+  }
 }
 
 function applyLanguagePreference(language: AppLanguage) {
@@ -63,6 +70,12 @@ function applyLanguagePreference(language: AppLanguage) {
   html.setAttribute("lang", language);
   html.setAttribute("dir", language === "ar" ? "rtl" : "ltr");
   document.cookie = `app_language=${language}; path=/; max-age=31536000; samesite=lax`;
+
+  try {
+    window.localStorage.setItem("app_language", language);
+  } catch {
+    // Ignore storage failures in constrained environments.
+  }
 }
 
 export function SettingsForm({

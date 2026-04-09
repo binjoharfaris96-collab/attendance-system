@@ -1,14 +1,15 @@
-import { listStudents, listExcuses, getSetting } from "@/lib/db";
+import { listStudents, listExcuses } from "@/lib/db";
 import { ExcuseForm } from "@/components/excuse-form";
 import { formatDateTime } from "@/lib/time";
 import { deleteExcuseAction } from "@/app/actions/excuse";
 import { revalidatePath } from "next/cache";
-import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { createTranslator } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function ExcusesPage() {
   const students = listStudents();
   const excuses = listExcuses(50);
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   // We need an inline server action for deletion in this context
