@@ -1,0 +1,214 @@
+.wrap {
+  width: 100%;
+}
+
+.bigCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 90%, transparent);
+  background:
+    linear-gradient(
+      158deg,
+      color-mix(in srgb, var(--surface-1) 88%, transparent) 0%,
+      color-mix(in srgb, var(--surface-2) 84%, transparent) 100%
+    );
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  padding: 1.35rem;
+  min-height: 360px;
+}
+
+.bgGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 4% 10%, color-mix(in srgb, var(--color-accent) 28%, transparent), transparent 48%),
+    radial-gradient(circle at 90% 90%, color-mix(in srgb, var(--color-teal) 24%, transparent), transparent 56%);
+  opacity: 0.85;
+}
+
+.headerRow {
+  position: relative;
+  z-index: 2;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.headline {
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--color-ink);
+}
+
+.copy {
+  margin: 0.5rem 0 0;
+  max-width: 700px;
+  font-size: 0.92rem;
+  color: var(--color-muted);
+}
+
+.addAppForm {
+  position: relative;
+  z-index: 2;
+  margin-top: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-line) 82%, transparent);
+  border-radius: 16px;
+  padding: 0.85rem;
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+}
+
+.addAppGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr auto;
+  gap: 0.65rem;
+}
+
+.addSuccess {
+  margin: 0.52rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-green) 88%, white);
+}
+
+.addError {
+  margin: 0.52rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-red) 90%, white);
+}
+
+.appGrid {
+  position: relative;
+  z-index: 2;
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.appTile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 86%, transparent);
+  background: color-mix(in srgb, var(--surface-1) 62%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, #000 10%, transparent);
+  padding: 1rem 1.05rem;
+  min-height: 152px;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.appTile:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-accent) 52%, var(--color-line));
+  background: color-mix(in srgb, var(--surface-2) 66%, transparent);
+}
+
+.logoWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 68%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  overflow: hidden;
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+
+.logoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
+.customLogo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--color-accent) 88%, white);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-accent) 18%, transparent) 0%,
+      color-mix(in srgb, var(--color-teal) 16%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--color-accent) 32%, transparent);
+}
+
+.whatsappLogo {
+  transform: scale(1.1);
+  border-radius: 22px;
+}
+
+.tileText {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.appName {
+  font-size: 1.16rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.appDesc {
+  font-size: 0.94rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launch {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-line) 84%, transparent);
+  padding: 0.34rem 0.76rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .addAppGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appGrid {
+    grid-template-columns: 1fr;
+  }
+}

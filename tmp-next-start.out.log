@@ -1,0 +1,8 @@
+
+> attendance-system@0.1.0 start
+> next start -p 4010
+
+▲ Next.js 16.2.2
+- Local:         http://localhost:4010
+- Network:       http://192.168.1.57:4010
+✓ Ready in 197ms

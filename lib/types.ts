@@ -1,0 +1,68 @@
+export type ActionState = {
+  status: "idle" | "error" | "success";
+  message: string;
+};
+
+export const idleActionState: ActionState = {
+  status: "idle",
+  message: "",
+};
+
+export type Session = {
+  email: string;
+  expiresAt: number;
+};
+
+export type Student = {
+  id: string;
+  studentCode: string;
+  fullName: string;
+  className: string | null;
+  faceDescriptors: number[][] | null;
+  photoUrl: string | null;
+  latesCount: number;
+  excusesCount: number;
+  breakLatesCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StudentListItem = Student & {
+  attendanceCount: number;
+  lastAttendanceAt: string | null;
+};
+
+export type AttendanceEvent = {
+  id: string;
+  studentId: string;
+  studentCodeSnapshot: string;
+  fullNameSnapshot: string;
+  classNameSnapshot: string | null;
+  source: string;
+  notes: string | null;
+  attendanceDate: string;
+  capturedAt: string;
+};
+
+export type DashboardSummary = {
+  totalStudents: number;
+  todayAttendance: number;
+  attendanceLast7Days: number;
+};
+
+export type DailyAttendanceCount = {
+  day: string;
+  total: number;
+};
+
+export type MisbehaviorReport = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCode: string;
+  className: string | null;
+  issueType: string;
+  notes: string | null;
+  reportedAt: string;
+  reportedBy: string | null;
+};
