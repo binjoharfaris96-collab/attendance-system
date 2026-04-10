@@ -117,8 +117,9 @@ function parseCustomApps(raw: string): SavedCustomApp[] {
 export default async function AppsPage() {
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
-  const initialCustomApps = parseCustomApps(getSetting("custom_apps", "[]"));
-
+ const initialCustomApps = parseCustomApps(
+  await getSetting("custom_apps", "[]")
+);
   return (
     <div className="space-y-6">
       <div className="page-header">

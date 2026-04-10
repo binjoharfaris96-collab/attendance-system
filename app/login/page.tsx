@@ -10,7 +10,7 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  const defaults = getAuthDefaults();
+  const defaults = await getAuthDefaults();
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--color-canvas)] p-6">
