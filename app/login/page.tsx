@@ -38,6 +38,9 @@ export default async function LoginPage() {
           <span className="text-xl font-semibold tracking-tight text-[var(--color-ink)]">
             Smart Attendance AI
           </span>
+          <span className="rounded-full border border-[var(--color-line)] bg-[var(--surface-1)] px-1.5 py-0.5 text-[8px] font-medium text-[var(--color-muted)]">
+            Build v1.0.3
+          </span>
         </div>
 
         {/* Card */}

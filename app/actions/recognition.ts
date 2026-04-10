@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { getSetting, recordAttendanceByStudentCode } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export async function checkInRecognizedFace(studentCode: string) {
   await requireSession();
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   const result = recordAttendanceByStudentCode({

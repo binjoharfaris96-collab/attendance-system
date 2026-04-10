@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth";
 import { getSetting } from "@/lib/db";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 import { idleActionState } from "@/lib/types";
 import type { ActionState } from "@/lib/types";
 
@@ -17,7 +18,7 @@ export async function login(
   formData: FormData,
 ) {
   void previousState;
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");

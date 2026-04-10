@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { requireSession } from "@/lib/auth";
-import { getSetting, recordAttendanceByStudentCode } from "@/lib/db";
+import { recordAttendanceByStudentCode } from "@/lib/db";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 import { idleActionState } from "@/lib/types";
 import type { ActionState } from "@/lib/types";
 
@@ -14,7 +15,7 @@ export async function checkInStudentAction(
 ) {
   void previousState;
   await requireSession();
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   const studentCode = String(formData.get("studentCode") ?? "").trim();

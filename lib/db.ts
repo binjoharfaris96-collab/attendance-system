@@ -84,6 +84,13 @@ function mapStudentListItem(row: Record<string, unknown>): StudentListItem {
 }
 
 function getDatabaseFilePath() {
+  const isVercel = process.env.VERCEL === "1";
+  
+  if (isVercel) {
+    // Vercel filesystem is read-only except for /tmp
+    return join("/tmp", "attendance.sqlite");
+  }
+
   const dataDirectory = join(process.cwd(), "data");
 
   if (!existsSync(dataDirectory)) {

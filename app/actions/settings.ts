@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSession, requireSession, updateAdminCredentials } from "@/lib/auth";
 import { getSetting } from "@/lib/db";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
+import { getAppLanguage } from "@/lib/i18n-server";
 
 export async function saveSettingAction(key: string, value: string) {
   await requireSession();
@@ -37,7 +38,7 @@ export async function saveSettingsBatchAction(
 
 export async function updateAccountCredentialsAction(formData: FormData) {
   const session = await requireSession();
-  const lang = (getSetting("app_language", "en") as AppLanguage) || "en";
+  const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
   const username = String(formData.get("username") ?? "").trim().toLowerCase();

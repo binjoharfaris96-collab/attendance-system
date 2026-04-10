@@ -18,8 +18,8 @@ export default async function ExportPage() {
         <div className="card space-y-4">
           <div>
             <p className="eyebrow">{t("export.attendanceEyebrow")}</p>
-            <h3 className="section-title">{t("export.attendanceLogTitle")}</h3>
-            <p className="section-copy">{t("export.attendanceLogDesc")}</p>
+            <h3 className="section-title">{t("export.attendanceLog")}</h3>
+            <p className="section-copy">{t("export.attendanceDesc")}</p>
           </div>
 
           <a href="/api/export-attendance" download className="btn btn--primary inline-flex w-fit items-center gap-2">

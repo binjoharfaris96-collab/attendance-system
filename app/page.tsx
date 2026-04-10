@@ -137,6 +137,9 @@ export default async function Home() {
                 Smart Attendance AI
               </h1>
             </div>
+            <span className="ml-2 hidden rounded-full border border-[var(--color-line)] bg-[var(--surface-1)] px-1.5 py-0.5 text-[8px] font-medium text-[var(--color-muted)] sm:inline-block">
+              Build v1.0.3 - Filesystem Fixed
+            </span>
           </div>
 
           <nav className="hidden items-center gap-2 md:flex">
