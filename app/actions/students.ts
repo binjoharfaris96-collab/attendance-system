@@ -89,7 +89,7 @@ export async function createStudentAction(
   }
 
   try {
-    createStudent(input);
+    await createStudent(input);
   } catch (error) {
     return {
       status: "error",
@@ -118,7 +118,8 @@ export async function updateStudentAction(
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
-  if (!getStudentById(studentId)) {
+  const existingStudent = await getStudentById(studentId);
+  if (!existingStudent) {
     return {
       status: "error",
       message: t("student.studentNotFound"),
@@ -136,7 +137,7 @@ export async function updateStudentAction(
   }
 
   try {
-    updateStudent(studentId, input);
+    await updateStudent(studentId, input);
   } catch (error) {
     return {
       status: "error",
@@ -163,7 +164,7 @@ export async function deleteStudentAction(studentId: string) {
 
   try {
     const { deleteStudent } = await import("@/lib/db");
-    deleteStudent(studentId);
+    await deleteStudent(studentId);
   } catch {
     return {
       status: "error",
@@ -191,7 +192,7 @@ export async function updateDisciplinaryEventAction(formData: FormData) {
 
   try {
     const { updateStudentDisciplinaryCount } = await import("@/lib/db");
-    updateStudentDisciplinaryCount(studentId, eventType, amount);
+    await updateStudentDisciplinaryCount(studentId, eventType, amount);
   } catch (error) {
     console.error("Could not log disciplinary event:", error);
   }

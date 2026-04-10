@@ -39,8 +39,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const session = await requireSession();
-  const warningCount = countUnknownFaces();
-  const phoneCount = countPhoneDetections();
+  const warningCount = await countUnknownFaces();
+  const phoneCount = await countPhoneDetections();
   const lang = await getAppLanguage();
   const initialTheme = await getThemePreference();
   const t = createTranslator(lang);

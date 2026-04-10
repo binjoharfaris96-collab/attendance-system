@@ -5,8 +5,8 @@ import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function AttendancePage() {
-  const attendance = listRecentAttendance(50);
-  const students = listStudents();
+  const attendance = await listRecentAttendance(50);
+  const students = await listStudents();
   const today = toAttendanceDate(new Date().toISOString());
   const studentPhotoById = Object.fromEntries(
     students.map((student) => [student.id, student.photoUrl]),

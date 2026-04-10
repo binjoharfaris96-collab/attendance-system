@@ -10,7 +10,7 @@ export async function saveSettingAction(key: string, value: string) {
   await requireSession();
   try {
     const { updateSetting } = await import("@/lib/db");
-    updateSetting(key, value);
+    await updateSetting(key, value);
     revalidatePath("/", "layout"); // Revalidate everything so the new settings apply everywhere
     return { success: true };
   } catch (error) {
@@ -26,7 +26,7 @@ export async function saveSettingsBatchAction(
   try {
     const { updateSetting } = await import("@/lib/db");
     for (const update of updates) {
-      updateSetting(update.key, update.value);
+      await updateSetting(update.key, update.value);
     }
     revalidatePath("/", "layout");
     return { success: true };

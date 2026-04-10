@@ -24,8 +24,8 @@ function translateIssueTypeLabel(issueType: string, t: (key: string) => string) 
 }
 
 export default async function BehaviorPage() {
-  const students = listStudents();
-  const reports = listRecentMisbehaviorReports(60);
+  const students = await listStudents();
+  const reports = await listRecentMisbehaviorReports(60);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

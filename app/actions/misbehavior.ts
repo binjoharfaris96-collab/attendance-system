@@ -46,7 +46,7 @@ export async function submitMisbehaviorAction(formData: FormData) {
   }
 
   try {
-    createMisbehaviorReport({
+    await createMisbehaviorReport({
       studentId,
       className,
       issueType,

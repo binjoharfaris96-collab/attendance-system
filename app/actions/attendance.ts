@@ -28,7 +28,7 @@ export async function checkInStudentAction(
     } satisfies ActionState;
   }
 
-  const result = recordAttendanceByStudentCode({
+  const result = await recordAttendanceByStudentCode({
     studentCode,
     notes,
   });

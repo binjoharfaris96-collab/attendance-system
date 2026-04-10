@@ -7,15 +7,15 @@ import { createTranslator, type AppLanguage } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function SettingsPage() {
-  const lateCutoffMinutes = getSetting("late_cutoff_minutes", "470");
-  const checkInOpenMinutes = getSetting("check_in_open_minutes", "0");
-  const checkInCloseMinutes = getSetting("check_in_close_minutes", "1439");
-  const themePreference = getSetting("theme_preference", "dark");
+  const lateCutoffMinutes = await getSetting("late_cutoff_minutes", "470");
+  const checkInOpenMinutes = await getSetting("check_in_open_minutes", "0");
+  const checkInCloseMinutes = await getSetting("check_in_close_minutes", "1439");
+  const themePreference = await getSetting("theme_preference", "dark");
   const appLanguage = await getAppLanguage();
-  const unknownFaceAlerts = getSetting("alerts_unknown_face_enabled", "true");
-  const phoneDetectionAlerts = getSetting("alerts_phone_detection_enabled", "true");
-  const backupInterval = getSetting("backup_interval", "weekly");
-  const authDefaults = getAuthDefaults();
+  const unknownFaceAlerts = await getSetting("alerts_unknown_face_enabled", "true");
+  const phoneDetectionAlerts = await getSetting("alerts_phone_detection_enabled", "true");
+  const backupInterval = await getSetting("backup_interval", "weekly");
+  const authDefaults = await getAuthDefaults();
   const t = createTranslator(appLanguage as AppLanguage);
 
   return (

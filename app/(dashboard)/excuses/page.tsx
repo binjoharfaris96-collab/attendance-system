@@ -7,8 +7,8 @@ import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function ExcusesPage() {
-  const students = listStudents();
-  const excuses = listExcuses(50);
+  const students = await listStudents();
+  const excuses = await listExcuses(50);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

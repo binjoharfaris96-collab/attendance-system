@@ -12,9 +12,9 @@ import { getAppLanguage } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export default async function StatisticsPage() {
-  const summary = getDashboardSummary();
-  const dailyCounts = getDailyAttendanceCounts(14);
-  const students = listStudents();
+  const summary = await getDashboardSummary();
+  const dailyCounts = await getDailyAttendanceCounts(14);
+  const students = await listStudents();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

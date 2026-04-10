@@ -1,20 +1,21 @@
 import "server-only";
 
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { cache } from "react";
+import bcrypt from "bcrypt";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { getSetting, updateSetting } from "@/lib/db";
+import { getSetting, getUserByEmail, updateSetting } from "@/lib/db";
 import type { Session } from "@/lib/types";
 
 const SESSION_COOKIE = "rollcall_session";
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 12;
+// Session duration: 365 days (effectively "forever" for most use cases)
+const SESSION_DURATION_MS = 1000 * 60 * 60 * 24 * 365;
 
 const AUTH_EMAIL_KEY = "admin_email";
 const AUTH_PASSWORD_HASH_KEY = "admin_password_hash";
-const PASSWORD_HASH_PREFIX = "scrypt";
 
 type SessionPayload = {
   email: string;
@@ -30,53 +31,49 @@ function getEnvAdminPassword() {
 }
 
 function getSessionSecret() {
-  return process.env.SESSION_SECRET?.trim() || "dev-secret-change-me";
+  return process.env.AUTH_SECRET?.trim() || process.env.SESSION_SECRET?.trim() || "dev-secret-change-me";
 }
 
-function getStoredAdminEmail() {
-  const value = getSetting(AUTH_EMAIL_KEY, "").trim().toLowerCase();
+async function getStoredAdminEmail() {
+  const value = (await getSetting(AUTH_EMAIL_KEY, "")).trim().toLowerCase();
   return value || null;
 }
 
-function getStoredAdminPasswordHash() {
-  const value = getSetting(AUTH_PASSWORD_HASH_KEY, "").trim();
+async function getStoredAdminPasswordHash() {
+  const value = (await getSetting(AUTH_PASSWORD_HASH_KEY, "")).trim();
   return value || null;
 }
 
-function getResolvedAdminEmail() {
-  return getStoredAdminEmail() ?? getEnvAdminEmail();
+export async function getResolvedAdminEmail() {
+  return (await getStoredAdminEmail()) ?? getEnvAdminEmail();
 }
 
-function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("base64url");
-  const hash = scryptSync(password, salt, 64).toString("base64url");
-  return `${PASSWORD_HASH_PREFIX}:${salt}:${hash}`;
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 12);
 }
 
-function verifyHashedPassword(password: string, storedHash: string) {
+export async function verifyHashedPassword(password: string, storedHash: string) {
   try {
-    const [prefix, salt, hashBase64] = storedHash.split(":");
-    if (!prefix || !salt || !hashBase64 || prefix !== PASSWORD_HASH_PREFIX) {
-      return false;
+    if (storedHash.startsWith("$2a$") || storedHash.startsWith("$2b$") || storedHash.startsWith("$2y$")) {
+      return bcrypt.compare(password, storedHash);
     }
 
+    // Backward compatibility with previous scrypt format.
+    const [prefix, salt, hashBase64] = storedHash.split(":");
+    if (!prefix || !salt || !hashBase64 || prefix !== "scrypt") return false;
+    const { scryptSync } = await import("node:crypto");
     const derived = scryptSync(password, salt, 64);
     const expected = Buffer.from(hashBase64, "base64url");
-
-    if (derived.length !== expected.length) {
-      return false;
-    }
-
-    return timingSafeEqual(derived, expected);
+    return derived.length === expected.length && timingSafeEqual(derived, expected);
   } catch {
     return false;
   }
 }
 
-function validateCurrentAdminPassword(password: string) {
-  const storedHash = getStoredAdminPasswordHash();
+async function validateCurrentAdminPassword(password: string) {
+  const storedHash = await getStoredAdminPasswordHash();
   if (storedHash) {
-    return verifyHashedPassword(password, storedHash);
+    return await verifyHashedPassword(password, storedHash);
   }
 
   return password === getEnvAdminPassword();
@@ -139,12 +136,12 @@ function toSession(payload: SessionPayload): Session {
   };
 }
 
-export function getAuthDefaults() {
+export async function getAuthDefaults() {
   const hasStoredAuth =
-    Boolean(getStoredAdminEmail()) || Boolean(getStoredAdminPasswordHash());
+    Boolean(await getStoredAdminEmail()) || Boolean(await getStoredAdminPasswordHash());
 
   return {
-    email: getResolvedAdminEmail(),
+    email: await getResolvedAdminEmail(),
     password: getEnvAdminPassword(),
     isUsingFallbackCredentials:
       !hasStoredAuth && !process.env.ADMIN_EMAIL && !process.env.ADMIN_PASSWORD,
@@ -153,9 +150,17 @@ export function getAuthDefaults() {
 
 export async function validateLogin(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();
+  
+  // 1. Check users table
+  const user = await getUserByEmail(normalizedEmail);
+  if (user) {
+    return await verifyHashedPassword(password, user.passwordHash);
+  }
+
+  // 2. Fallback to legacy admin check
   return (
-    normalizedEmail === getResolvedAdminEmail() &&
-    validateCurrentAdminPassword(password)
+    normalizedEmail === (await getResolvedAdminEmail()) &&
+    (await validateCurrentAdminPassword(password))
   );
 }
 
@@ -182,7 +187,7 @@ export async function updateAdminCredentials(input: {
     };
   }
 
-  if (!validateCurrentAdminPassword(currentPassword)) {
+  if (!(await validateCurrentAdminPassword(currentPassword))) {
     return {
       success: false,
       message: "Current password is incorrect.",
@@ -196,7 +201,7 @@ export async function updateAdminCredentials(input: {
     };
   }
 
-  const currentEmail = getResolvedAdminEmail();
+  const currentEmail = await getResolvedAdminEmail();
   const shouldUpdateEmail = nextEmail !== currentEmail;
   const shouldUpdatePassword = nextPassword.length > 0;
 
@@ -209,11 +214,11 @@ export async function updateAdminCredentials(input: {
   }
 
   if (shouldUpdateEmail) {
-    updateSetting(AUTH_EMAIL_KEY, nextEmail);
+    await updateSetting(AUTH_EMAIL_KEY, nextEmail);
   }
 
   if (shouldUpdatePassword) {
-    updateSetting(AUTH_PASSWORD_HASH_KEY, hashPassword(nextPassword));
+    await updateSetting(AUTH_PASSWORD_HASH_KEY, await hashPassword(nextPassword));
   }
 
   return {

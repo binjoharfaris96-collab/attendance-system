@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     for (const update of updates) {
-      updateSetting(update.key, update.value);
+      await updateSetting(update.key, update.value);
     }
 
     revalidatePath("/", "layout");

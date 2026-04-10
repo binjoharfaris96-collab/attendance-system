@@ -150,12 +150,17 @@ export default async function Home() {
           </nav>
 
           <div className="flex w-full items-center gap-2 sm:w-auto sm:justify-end">
-            <Link href="/login" className="btn btn--outline hidden sm:inline-flex">
-              Sign In
+            <Link href="/login" className="btn btn--outline w-full justify-center sm:w-auto">
+              Login
             </Link>
-            <Link href={primaryHref} className="btn btn--primary w-full justify-center sm:w-auto">
-              Enter Dashboard
+            <Link href="/signup" className="btn btn--primary w-full justify-center sm:w-auto">
+              Sign Up
             </Link>
+            {session ? (
+              <Link href="/dashboard" className="btn btn--accent w-full justify-center sm:w-auto">
+                Enter Dashboard
+              </Link>
+            ) : null}
           </div>
         </header>
 
@@ -194,7 +199,13 @@ export default async function Home() {
               </div>
 
               <div className="mt-7 flex flex-wrap gap-2">
-                <Link href={primaryHref} className="btn btn--primary">
+                <Link href="/signup" className="btn btn--primary">
+                  Sign Up
+                </Link>
+                <Link href="/login" className="btn btn--outline">
+                  Login
+                </Link>
+                <Link href={primaryHref} className="btn btn--accent">
                   Open Workspace
                 </Link>
                 <a href="#modules" className="btn btn--outline">
@@ -342,12 +353,17 @@ export default async function Home() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={primaryHref} className="btn btn--primary">
-                Enter Dashboard
+              <Link href="/signup" className="btn btn--primary">
+                Sign Up
               </Link>
               <Link href="/login" className="btn btn--outline">
-                Admin Sign In
+                Login
               </Link>
+              {session ? (
+                <Link href="/dashboard" className="btn btn--accent">
+                  Enter Dashboard
+                </Link>
+              ) : null}
             </div>
           </div>
         </section>

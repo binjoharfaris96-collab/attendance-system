@@ -13,9 +13,9 @@ import { getAppLanguage } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const summary = getDashboardSummary();
-  const recentAttendance = listRecentAttendance(5);
-  const students = listStudents();
+  const summary = await getDashboardSummary();
+  const recentAttendance = await listRecentAttendance(5);
+  const students = await listStudents();
   const studentPhotoById = new Map(
     students.map((student) => [student.id, student.photoUrl]),
   );

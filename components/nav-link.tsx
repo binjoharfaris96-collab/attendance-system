@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { t, type AppLanguage } from "@/lib/i18n";
@@ -16,6 +16,7 @@ type NavLinkProps = {
 
 export function NavLink({ href, labelKey, icon, badge, lang = "en" }: NavLinkProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
   const [activeLang, setActiveLang] = useState<AppLanguage>(lang);
 
@@ -39,6 +40,8 @@ export function NavLink({ href, labelKey, icon, badge, lang = "en" }: NavLinkPro
   return (
     <Link
       href={href}
+      prefetch={false}
+      onClick={() => router.refresh()}
       className={`pill-nav-item ${isActive ? "pill-nav-item--active" : ""}`}
       dir={activeLang === "ar" ? "rtl" : "ltr"}
     >

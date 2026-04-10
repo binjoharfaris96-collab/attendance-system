@@ -4,9 +4,9 @@ import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function RecognitionPage() {
-  const allStudents = listStudents();
+  const allStudents = await listStudents();
   const unknownFaceAlertsEnabled =
-    getSetting("alerts_unknown_face_enabled", "true") === "true";
+    (await getSetting("alerts_unknown_face_enabled", "true")) === "true";
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
   

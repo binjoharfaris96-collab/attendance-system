@@ -68,18 +68,18 @@ export default async function StudentDetailPage({
   params,
 }: StudentDetailPageProps) {
   const { studentId } = await params;
-  const student = getStudentById(studentId);
+  const student = await getStudentById(studentId);
 
   if (!student) {
     notFound();
   }
 
-  const allStudents = listStudents();
+  const allStudents = await listStudents();
   const studentListItem = allStudents.find(s => s.id === studentId);
   const presentCount = studentListItem?.attendanceCount ?? 0;
 
-  const attendance = listAttendanceForStudent(studentId, 20);
-  const behaviorReports = listMisbehaviorReportsForStudent(studentId, 15);
+  const attendance = await listAttendanceForStudent(studentId, 20);
+  const behaviorReports = await listMisbehaviorReportsForStudent(studentId, 15);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

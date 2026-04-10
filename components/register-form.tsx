@@ -3,17 +3,13 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 
-import { login } from "@/app/actions/auth";
+import { register } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/submit-button";
 import { t, type AppLanguage } from "@/lib/i18n";
 import { idleActionState } from "@/lib/types";
 
-type LoginFormProps = {
-  defaultEmail: string;
-};
-
-export function LoginForm({ defaultEmail }: LoginFormProps) {
-  const [state, action] = useActionState(login, idleActionState);
+export function RegisterForm() {
+  const [state, action] = useActionState(register, idleActionState);
   const [activeLang, setActiveLang] = useState<AppLanguage>("en");
 
   useEffect(() => {
@@ -36,14 +32,27 @@ export function LoginForm({ defaultEmail }: LoginFormProps) {
   return (
     <form action={action} className="space-y-4">
       <div className="space-y-1.5">
+        <label className="field-label" htmlFor="fullName">
+          {activeLang === "ar" ? "الاسم الكامل" : "Full Name"}
+        </label>
+        <input
+          id="fullName"
+          name="fullName"
+          type="text"
+          className="field-input"
+          placeholder={activeLang === "ar" ? "أدخل اسمك الكامل" : "Enter your full name"}
+          required
+        />
+      </div>
+
+      <div className="space-y-1.5">
         <label className="field-label" htmlFor="email">
           {t("login.username", activeLang)}
         </label>
         <input
           id="email"
           name="email"
-          type="text"
-          defaultValue={defaultEmail}
+          type="email"
           className="field-input"
           placeholder={t("login.username", activeLang)}
           required
@@ -61,21 +70,15 @@ export function LoginForm({ defaultEmail }: LoginFormProps) {
           className="field-input"
           placeholder={t("login.password", activeLang)}
           required
+          minLength={8}
         />
       </div>
 
       <SubmitButton
-        label={activeLang === "ar" ? "تسجيل الدخول" : "Login"}
-        pendingLabel={activeLang === "ar" ? "جاري تسجيل الدخول..." : "Logging in..."}
+        label={activeLang === "ar" ? "إنشاء حساب" : "Sign Up"}
+        pendingLabel={activeLang === "ar" ? "جاري الإنشاء..." : "Creating account..."}
         className="btn btn--primary w-full justify-center"
       />
-
-      <Link
-        href="/signup"
-        className="btn btn--outline w-full justify-center"
-      >
-        {activeLang === "ar" ? "إنشاء حساب" : "Sign Up"}
-      </Link>
 
       {state.message ? (
         <p
@@ -85,15 +88,15 @@ export function LoginForm({ defaultEmail }: LoginFormProps) {
         </p>
       ) : null}
 
-      <div className="mt-2 text-center text-sm">
+      <div className="mt-6 text-center text-sm">
         <span className="text-[var(--color-muted)]">
-          {activeLang === "ar" ? "ليس لديك حساب؟" : "Don't have an account?"}
+          {activeLang === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?"}
         </span>{" "}
         <Link
-          href="/signup"
+          href="/login"
           className="font-medium text-blue-600 hover:text-blue-500"
         >
-          {activeLang === "ar" ? "إنشاء حساب" : "Create an account"}
+          {t("login.signIn", activeLang)}
         </Link>
       </div>
     </form>

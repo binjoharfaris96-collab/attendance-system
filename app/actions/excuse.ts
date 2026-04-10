@@ -20,7 +20,7 @@ export async function submitExcuseAction(formData: FormData) {
     }
 
     const { createExcuse } = await import("@/lib/db");
-    createExcuse(studentId, reason, excuseDate);
+    await createExcuse(studentId, reason, excuseDate);
     
     revalidatePath("/", "layout");
     return { success: true };
@@ -36,7 +36,7 @@ export async function deleteExcuseAction(id: string) {
   const t = createTranslator(lang);
   try {
     const { deleteExcuse } = await import("@/lib/db");
-    deleteExcuse(id);
+    await deleteExcuse(id);
     
     revalidatePath("/", "layout");
     return { success: true };

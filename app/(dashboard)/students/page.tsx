@@ -5,8 +5,10 @@ import { listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
+export const dynamic = "force-dynamic";
+
 export default async function StudentsPage() {
-  const students = listStudents();
+  const students = await listStudents();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

@@ -4,11 +4,11 @@ import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function ExamMonitorPage() {
-  const allStudents = listStudents();
+  const allStudents = await listStudents();
   const unknownFaceAlertsEnabled =
-    getSetting("alerts_unknown_face_enabled", "true") === "true";
+    (await getSetting("alerts_unknown_face_enabled", "true")) === "true";
   const phoneDetectionAlertsEnabled =
-    getSetting("alerts_phone_detection_enabled", "true") === "true";
+    (await getSetting("alerts_phone_detection_enabled", "true")) === "true";
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
   
