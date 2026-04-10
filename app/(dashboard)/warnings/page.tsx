@@ -5,7 +5,7 @@ import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function WarningsPage() {
-  const faces = listUnknownFaces(50);
+  const faces = await listUnknownFaces(50);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
