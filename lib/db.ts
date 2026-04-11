@@ -116,6 +116,7 @@ async function initializeDatabase(client: Client) {
       full_name TEXT NOT NULL,
       class_name TEXT,
       face_descriptors TEXT,
+      photo_url TEXT,
       lates_count INTEGER DEFAULT 0,
       excuses_count INTEGER DEFAULT 0,
       break_lates_count INTEGER DEFAULT 0,
@@ -161,13 +162,6 @@ export async function ensureDatabaseReady() {
   
   if (globalForDatabase.isReady) return db;
 
-  // Run migrations
-  try { await db.execute('ALTER TABLE students ADD COLUMN face_descriptors TEXT'); } catch {}
-  try { await db.execute('ALTER TABLE students ADD COLUMN lates_count INTEGER DEFAULT 0'); } catch {}
-  try { await db.execute('ALTER TABLE students ADD COLUMN excuses_count INTEGER DEFAULT 0'); } catch {}
-  try { await db.execute('ALTER TABLE students ADD COLUMN break_lates_count INTEGER DEFAULT 0'); } catch {}
-  try { await db.execute('ALTER TABLE students ADD COLUMN photo_url TEXT'); } catch {}
-  
   await db.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -196,7 +190,34 @@ export async function ensureDatabaseReady() {
   await db.execute("CREATE INDEX IF NOT EXISTS idx_misbehavior_reported_at ON misbehavior_reports(reported_at DESC)");
 
   await initializeDatabase(db);
-  
+
+  // Add columns on existing DBs (must run after students table exists). Earlier runs failed silently when the table did not exist yet.
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN face_descriptors TEXT");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN lates_count INTEGER DEFAULT 0");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN excuses_count INTEGER DEFAULT 0");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN break_lates_count INTEGER DEFAULT 0");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN photo_url TEXT");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+
   await db.execute(`CREATE TABLE IF NOT EXISTS unknown_faces (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
   await db.execute(`CREATE TABLE IF NOT EXISTS phone_detections (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
   await db.execute(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`);
