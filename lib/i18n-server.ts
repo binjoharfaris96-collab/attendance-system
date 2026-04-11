@@ -14,7 +14,8 @@ export async function getAppLanguage(): Promise<AppLanguage> {
     // cookies() might throw in some environments, fallback to DB
   }
   
-  return (getSetting("app_language", "en") as AppLanguage) || "en";
+  const fromDb = await getSetting("app_language", "en");
+  return (fromDb === "ar" || fromDb === "en" ? fromDb : "en") as AppLanguage;
 }
 
 export async function getThemePreference(): Promise<"light" | "dark"> {
@@ -29,5 +30,6 @@ export async function getThemePreference(): Promise<"light" | "dark"> {
     // Fallback to DB when cookies are unavailable.
   }
 
-  return getSetting("theme_preference", "dark") === "light" ? "light" : "dark";
+  const fromDb = await getSetting("theme_preference", "dark");
+  return fromDb === "light" ? "light" : "dark";
 }

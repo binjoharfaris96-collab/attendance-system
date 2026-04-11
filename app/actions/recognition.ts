@@ -12,7 +12,7 @@ export async function checkInRecognizedFace(studentCode: string) {
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
-  const result = recordAttendanceByStudentCode({
+  const result = await recordAttendanceByStudentCode({
     studentCode,
     source: "facial_recognition",
     notes: t("camera.recognizedCheckingIn"),

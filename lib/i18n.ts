@@ -98,6 +98,10 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "stats.attendanceTrends": { en: "Attendance Trends (Last 14 Days)", ar: "اتجاهات الحضور (آخر 14 يومًا)" },
   "stats.dailyPresent": { en: "Daily present counts across all registered students.", ar: "أعداد الحضور اليومية لجميع الطلاب المسجلين." },
   "stats.noData": { en: "No attendance data for this period yet.", ar: "لا توجد بيانات حضور لهذه الفترة بعد." },
+  "stats.statusPieTitle": { en: "Today: Present, Late & Absent", ar: "اليوم: حاضر، متأخر وغائب" },
+  "stats.statusPieSubtitle": { en: "On-time vs late check-ins (vs your late cutoff) and students not checked in yet.", ar: "الحضور في الموعد مقابل المتأخر (حسب وقت التأخير) ومن لم يسجّل حضوره." },
+  "stats.segmentOnTime": { en: "On time", ar: "في الموعد" },
+  "stats.pieNoStudents": { en: "No students registered yet — add students to see this chart.", ar: "لا يوجد طلاب مسجّلون بعد — أضف طلاباً لعرض هذا المخطط." },
 
   // â”€â”€ Settings â”€â”€
   "settings.title": { en: "System Settings", ar: "إعدادات النظام" },

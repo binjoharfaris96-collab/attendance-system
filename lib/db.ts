@@ -8,6 +8,7 @@ import { createClient, type Client } from "@libsql/client";
 import {
   formatDateLabel,
   isoNow,
+  minutesSinceMidnightFromIso,
   shiftDate,
   toAttendanceDate,
 } from "@/lib/time";
@@ -18,6 +19,7 @@ import type {
   MisbehaviorReport,
   Student,
   StudentListItem,
+  TodayAttendanceBreakdown,
 } from "@/lib/types";
 
 type DatabaseGlobal = {
@@ -596,6 +598,45 @@ export async function getDashboardSummary() {
   };
 
   return summary;
+}
+
+export async function getTodayAttendanceBreakdown(): Promise<TodayAttendanceBreakdown> {
+  const database = await ensureDatabaseReady();
+  const today = toAttendanceDate(isoNow());
+  const lateCutoffMinutes = parseInt(
+    await getSetting("late_cutoff_minutes", "470"),
+    10,
+  );
+
+  const rsTotal = await database.execute(`SELECT COUNT(*) AS total FROM students`);
+  const totalStudents = Number(rsTotal.rows[0]?.total ?? 0);
+
+  const rsEvents = await database.execute({
+    sql: `
+      SELECT captured_at AS capturedAt
+      FROM attendance_events
+      WHERE attendance_date = :today
+    `,
+    args: { today },
+  });
+
+  let onTime = 0;
+  let late = 0;
+
+  for (const row of rsEvents.rows) {
+    const capturedAt = String(row.capturedAt ?? "");
+    const mins = minutesSinceMidnightFromIso(capturedAt);
+    if (mins > lateCutoffMinutes) {
+      late += 1;
+    } else {
+      onTime += 1;
+    }
+  }
+
+  const checkedIn = onTime + late;
+  const absent = Math.max(0, totalStudents - checkedIn);
+
+  return { totalStudents, onTime, late, absent };
 }
 
 export async function getDailyAttendanceCounts(days = 7) {

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const student = getStudentById(studentId);
+  const student = await getStudentById(studentId);
   if (!student) {
     return NextResponse.json({ error: "Student not found" }, { status: 404 });
   }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid face data" }, { status: 400 });
   }
 
-  updateStudent(studentId, {
+  await updateStudent(studentId, {
     studentCode: student.studentCode,
     fullName: student.fullName,
     className: student.className ?? "",

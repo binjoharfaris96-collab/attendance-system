@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { AttendanceStatusPieChart } from "@/components/attendance-status-pie-chart";
 import { AttendanceTrendChart } from "@/components/attendance-trend-chart";
 import {
   getDashboardSummary,
   getDailyAttendanceCounts,
+  getTodayAttendanceBreakdown,
   listStudents,
 } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
@@ -14,6 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function StatisticsPage() {
   const summary = await getDashboardSummary();
   const dailyCounts = await getDailyAttendanceCounts(14);
+  const todayBreakdown = await getTodayAttendanceBreakdown();
   const students = await listStudents();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
@@ -89,15 +92,37 @@ export default async function StatisticsPage() {
         </article>
       </div>
 
-      <div className="card">
-        <div>
-          <h2 className="text-lg font-semibold text-[var(--color-ink)]">
-            {t("stats.attendanceTrends")}
-          </h2>
-          <p className="text-sm text-[var(--color-muted)]">{t("stats.dailyPresent")}</p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("stats.statusPieTitle")}
+            </h2>
+            <p className="text-sm text-[var(--color-muted)]">{t("stats.statusPieSubtitle")}</p>
+          </div>
+
+          <AttendanceStatusPieChart
+            breakdown={todayBreakdown}
+            lang={lang}
+            labels={{
+              onTime: t("stats.segmentOnTime"),
+              late: t("status.late"),
+              absent: t("status.absent"),
+              noStudents: t("stats.pieNoStudents"),
+            }}
+          />
         </div>
 
-        <AttendanceTrendChart dailyCounts={dailyCounts} lang={lang} />
+        <div className="card">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("stats.attendanceTrends")}
+            </h2>
+            <p className="text-sm text-[var(--color-muted)]">{t("stats.dailyPresent")}</p>
+          </div>
+
+          <AttendanceTrendChart dailyCounts={dailyCounts} lang={lang} />
+        </div>
       </div>
     </div>
   );

@@ -55,6 +55,14 @@ export type DailyAttendanceCount = {
   total: number;
 };
 
+/** Today's headcount: on-time check-ins, late check-ins, and registered students with no check-in. */
+export type TodayAttendanceBreakdown = {
+  totalStudents: number;
+  onTime: number;
+  late: number;
+  absent: number;
+};
+
 export type MisbehaviorReport = {
   id: string;
   studentId: string;

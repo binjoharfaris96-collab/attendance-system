@@ -832,10 +832,10 @@ export async function checkInStudentAction(
     } satisfies ActionState;
   }
 
-  const result = recordAttendanceByStudentCode({
-    studentCode,
-    notes,
-  });
+  const result = await recordAttendanceByStudentCode({
+  studentCode,
+  notes,
+});
 
   revalidatePath("/dashboard");
   revalidatePath("/attendance");

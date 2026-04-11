@@ -46,6 +46,18 @@ export function isoNow() {
   return new Date().toISOString();
 }
 
+/** Minutes since local midnight in the app timezone (used for late cutoff vs check-in time). */
+export function minutesSinceMidnightFromIso(iso: string): number {
+  const localTimeString = new Intl.DateTimeFormat("en-GB", {
+    timeZone: getAppTimeZone(),
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+  const [hour, minute] = localTimeString.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
 export function shiftDate(dateValue: string, amount: number) {
   const date = new Date(`${dateValue}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + amount);
