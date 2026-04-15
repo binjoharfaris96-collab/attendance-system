@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { AttendanceStatusPieChart } from "@/components/attendance-status-pie-chart";
+import dynamic from "next/dynamic";
+
+const AttendanceStatusPieChart = dynamic(() => import("@/components/attendance-status-pie-chart").then(mod => mod.AttendanceStatusPieChart), { ssr: false });
 import { AttendanceTrendChart } from "@/components/attendance-trend-chart";
 import {
   getDashboardSummary,

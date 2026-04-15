@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StudentEditForm, StudentDeleteForm } from "@/components/student-edit-form";
-import { StudentFaceUpdate } from "@/components/student-face-update";
+import dynamic from "next/dynamic";
+const StudentFaceUpdate = dynamic(() => import("@/components/student-face-update").then(mod => mod.StudentFaceUpdate), { ssr: false });
 import { getStudentById, listAttendanceForStudent, listMisbehaviorReportsForStudent, listStudents } from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { updateDisciplinaryEventAction } from "@/app/actions/students";

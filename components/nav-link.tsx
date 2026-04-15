@@ -40,8 +40,6 @@ export function NavLink({ href, labelKey, icon, badge, lang = "en" }: NavLinkPro
   return (
     <Link
       href={href}
-      prefetch={false}
-      onClick={() => router.refresh()}
       className={`pill-nav-item ${isActive ? "pill-nav-item--active" : ""}`}
       dir={activeLang === "ar" ? "rtl" : "ltr"}
     >
