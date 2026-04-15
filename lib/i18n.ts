@@ -24,6 +24,11 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "nav.helpCenter": { en: "Help Center", ar: "مركز المساعدة" },
   "nav.management": { en: "Management", ar: "الإدارة" },
   "nav.logout": { en: "Log Out", ar: "تسجيل الخروج" },
+  "nav.teacherOverview": { en: "Teacher Overview", ar: "نظرة عامة للمعلم" },
+  "nav.myClasses": { en: "My Classes", ar: "فصولي" },
+  "nav.assignments": { en: "Assignments", ar: "الواجبات" },
+  "nav.studentDashboard": { en: "Student Dashboard", ar: "لوحة الطالب" },
+  "shell.brandName": { en: "Smart Attendance", ar: "مساعد الحضور" },
 
   // â”€â”€ Dashboard â”€â”€
   "dashboard.title": { en: "Dashboard", ar: "لوحة التحكم" },
