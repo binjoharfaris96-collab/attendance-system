@@ -19,9 +19,11 @@ export async function GET() {
   }
 
   // Determine the callback URL based on environment
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL
+    ? process.env.NEXTAUTH_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   // Generate a CSRF state token and store it in a cookie

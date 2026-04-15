@@ -3,8 +3,6 @@ import { cookies } from "next/headers";
 
 import { createSession } from "@/lib/auth";
 
-const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || "stu.kfs.sch.sa";
-
 /**
  * GET /api/auth/callback/google
  *
@@ -50,9 +48,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=config", request.url));
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
+  const baseUrl = process.env.NEXTAUTH_URL
+    ? process.env.NEXTAUTH_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000";
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   try {
@@ -102,9 +102,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/login?error=no_email", request.url));
     }
 
-    // Domain validation
+    // Domain validation — hardcoded fallback ensures it ALWAYS blocks non-school emails
+    const allowedDomain = (process.env.ALLOWED_EMAIL_DOMAIN || "stu.kfs.sch.sa").trim().toLowerCase();
     const emailDomain = email.split("@")[1];
-    if (emailDomain !== ALLOWED_DOMAIN) {
+    console.log(`[OAuth] Email: ${email}, Domain: ${emailDomain}, Allowed: ${allowedDomain}`);
+    if (emailDomain !== allowedDomain) {
+      console.log(`[OAuth] BLOCKED: ${email} — domain "${emailDomain}" is not "${allowedDomain}"`);
       return NextResponse.redirect(new URL("/login?error=domain", request.url));
     }
 
