@@ -15,11 +15,12 @@ import { getAppLanguage } from "@/lib/i18n-server";
 import { idleActionState } from "@/lib/types";
 import type { ActionState } from "@/lib/types";
 
-const ALLOWED_DOMAIN = "stu.kfs.sch.sa";
+const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
+const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
 
 function isAllowedEmail(email: string) {
   const domain = email.split("@")[1];
-  return domain === (process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN);
+  return domain === ALLOWED_STUDENT_DOMAIN || domain === ALLOWED_TEACHER_DOMAIN;
 }
 
 export async function login(
@@ -42,7 +43,7 @@ export async function login(
   if (!isAllowedEmail(email)) {
     return {
       status: "error",
-      message: `Access denied. Only @${process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN} emails are allowed.`,
+      message: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
@@ -81,7 +82,7 @@ export async function register(
   if (!isAllowedEmail(email)) {
     return {
       status: "error",
-      message: `Access denied. Only @${process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN} emails are allowed.`,
+      message: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
@@ -110,11 +111,14 @@ export async function register(
   }
 
   try {
+    const role = email.endsWith(`@${ALLOWED_STUDENT_DOMAIN}`) ? "student" : "teacher";
+
     const passwordHash = await hashPassword(password);
     await createUser({
       email,
       passwordHash,
       fullName,
+      role,
     });
 
     await createSession(email);

@@ -92,7 +92,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Metric cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <article className="metric-card">
           <p className="metric-label">{t("dashboard.totalStudents")}</p>
           <svg className="metric-icon" style={{ opacity: 0.9 }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -123,6 +123,14 @@ export default async function DashboardPage() {
             <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
           </svg>
           <p className="metric-value text-[color-mix(in_srgb,var(--color-accent)_88%,white)]">{percentFormatter.format(attendanceRate)}%</p>
+        </article>
+
+        <article className="metric-card">
+          <p className="metric-label">{t("nav.classes")}</p>
+          <svg className="metric-icon" style={{ opacity: 0.9 }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+          <p className="metric-value text-purple-600">{(summary as any).totalClasses || 0}</p>
         </article>
 
         <article className="metric-card">

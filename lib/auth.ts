@@ -19,6 +19,7 @@ const AUTH_PASSWORD_HASH_KEY = "admin_password_hash";
 
 type SessionPayload = {
   email: string;
+  role: string;
   exp: number;
 };
 
@@ -115,7 +116,7 @@ function verifyToken(token: string | undefined) {
       Buffer.from(encodedPayload, "base64url").toString("utf8"),
     ) as SessionPayload;
 
-    if (!payload.email || typeof payload.exp !== "number") {
+    if (!payload.email || !payload.role || typeof payload.exp !== "number") {
       return null;
     }
 
@@ -132,6 +133,7 @@ function verifyToken(token: string | undefined) {
 function toSession(payload: SessionPayload): Session {
   return {
     email: payload.email,
+    role: payload.role,
     expiresAt: payload.exp,
   };
 }
@@ -233,8 +235,13 @@ export async function updateAdminCredentials(input: {
 }
 
 export async function createSession(email: string) {
+  // Query role from DB to embed into session
+  const user = await getUserByEmail(email);
+  const role = user?.role || "admin";
+
   const payload = encodePayload({
     email,
+    role,
     exp: Date.now() + SESSION_DURATION_MS,
   });
   const signature = signPayload(payload).toString("base64url");

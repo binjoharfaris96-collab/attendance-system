@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import { createSession } from "@/lib/auth";
+import { createUser, getUserByEmail } from "@/lib/db";
 
 /**
  * GET /api/auth/callback/google
@@ -102,17 +103,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/login?error=no_email", request.url));
     }
 
-    // Domain validation — hardcoded fallback ensures it ALWAYS blocks non-school emails
-    const allowedDomain = (process.env.ALLOWED_EMAIL_DOMAIN || "stu.kfs.sch.sa").trim().toLowerCase();
+    // Domain validation
     const emailDomain = email.split("@")[1];
-    console.log(`[OAuth] Email: ${email}, Domain: ${emailDomain}, Allowed: ${allowedDomain}`);
-    if (emailDomain !== allowedDomain) {
-      console.log(`[OAuth] BLOCKED: ${email} — domain "${emailDomain}" is not "${allowedDomain}"`);
+    let role = "student";
+
+    if (emailDomain === "stu.kfs.sch.sa") {
+      role = "student";
+    } else if (emailDomain === "kfs.sch.sa") {
+      role = "teacher"; // Note: admins are typically pre-created manually, so we default to teacher
+    } else {
+      console.log(`[OAuth] BLOCKED: ${email} — domain "${emailDomain}" is not permitted.`);
       return NextResponse.redirect(new URL("/login?error=domain", request.url));
     }
 
+    let user = await getUserByEmail(email);
+    if (!user) {
+      // Auto-provision user on first Google login
+      user = await createUser({
+        email,
+        passwordHash: "OAUTH_LOGIN",
+        fullName: userInfo.name || email.split("@")[0],
+        role,
+      });
+      console.log(`[OAuth] Auto-provisioned new ${role}: ${email}`);
+    }
+
     // Success! Create session using the EXISTING session system — no changes needed
-    await createSession(email);
+    await createSession(user.email);
 
     return NextResponse.redirect(new URL("/dashboard", request.url));
   } catch (err) {

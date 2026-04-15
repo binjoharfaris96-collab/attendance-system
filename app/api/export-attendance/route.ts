@@ -1,71 +1,66 @@
 import { requireSession } from "@/lib/auth";
-import { ensureDatabaseReady } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { listAttendanceReportExtended } from "@/lib/db";
+import { NextResponse, NextRequest } from "next/server";
 
-export async function GET() {
+function escapeCSV(val: any) {
+  const str = String(val ?? "");
+  if (str.includes(",") || str.includes("\"") || str.includes("\n")) {
+    return `"${str.replace(/"/g, "\"\"")}"`;
+  }
+  return str;
+}
+
+export async function GET(req: NextRequest) {
   try {
-    await requireSession();
+    const session = await requireSession();
+    if (session.role !== "admin" && session.role !== "teacher") {
+      return new NextResponse("Unauthorized", { status: 403 });
+    }
 
-    const database = await ensureDatabaseReady();
+    const { searchParams } = new URL(req.url);
+    const classId = searchParams.get("classId") || undefined;
+    const startDate = searchParams.get("startDate") || undefined;
+    const endDate = searchParams.get("endDate") || undefined;
 
-    const rs = await database.execute({
-      sql: `
-      SELECT
-        attendance_date AS attendanceDate,
-        student_code_snapshot AS studentCodeSnapshot,
-        full_name_snapshot AS fullNameSnapshot,
-        class_name_snapshot AS classNameSnapshot,
-        source,
-        captured_at AS capturedAt,
-        notes
-      FROM attendance_events
-      ORDER BY attendance_date DESC, captured_at DESC
-    `,
-      args: {},
+    const data = await listAttendanceReportExtended({
+      classId,
+      startDate,
+      endDate,
+      limit: 10000 // reasonable limit for CSV
     });
 
-    const rows = rs.rows as Record<string, unknown>[];
-
-    if (rows.length === 0) {
-      return new NextResponse("No data available", { status: 404 });
+    if (data.length === 0) {
+      return new NextResponse("No attendance records found for this criteria.", { status: 404 });
     }
 
-    const headers = [
-      "Date",
-      "Student ID",
-      "Student Name",
-      "Class",
-      "Source",
-      "Captured At",
-      "Notes",
-    ];
-
+    const headers = ["Date", "Student ID", "Student Name", "Class", "Source", "Captured At", "Notes"];
     const csvRows = [headers.join(",")];
 
-    for (const row of rows) {
-      const csvRow = [
-        `"${String(row.attendanceDate ?? "")}"`,
-        `"${String(row.studentCodeSnapshot ?? "")}"`,
-        `"${String(row.fullNameSnapshot ?? "")}"`,
-        `"${String(row.classNameSnapshot ?? "")}"`,
-        `"${String(row.source ?? "")}"`,
-        `"${String(row.capturedAt ?? "")}"`,
-        `"${String(row.notes ?? "")}"`,
-      ];
-      csvRows.push(csvRow.join(","));
+    for (const row of data) {
+      csvRows.push([
+        escapeCSV(row.attendanceDate),
+        escapeCSV(row.studentCodeSnapshot),
+        escapeCSV(row.fullNameSnapshot),
+        escapeCSV(row.classNameSnapshot),
+        escapeCSV(row.source),
+        escapeCSV(row.capturedAt),
+        escapeCSV(row.notes)
+      ].join(","));
     }
 
-    const csvString = csvRows.join("\n");
+    const csvContent = csvRows.join("\n");
+    const filename = `attendance_${classId || "all"}_${startDate || "start"}_to_${endDate || "end"}.csv`;
 
-    return new NextResponse(csvString, {
+    return new NextResponse(csvContent, {
       status: 200,
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="attendance_export_${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
       },
     });
-  } catch (err) {
-    console.error("Export failed:", err);
-    return new NextResponse("Unauthorized or Internal Error", { status: 500 });
+  } catch (err: any) {
+    console.error("Export error:", err);
+    return new NextResponse(`Export failed: ${err.message}`, { status: 500 });
   }
 }

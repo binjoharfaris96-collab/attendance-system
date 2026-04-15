@@ -3,7 +3,14 @@ import { notFound } from "next/navigation";
 
 import { StudentEditForm, StudentDeleteForm } from "@/components/student-edit-form";
 import { StudentFaceUpdate } from "@/components/student-face-update";
-import { getStudentById, listAttendanceForStudent, listMisbehaviorReportsForStudent, listStudents } from "@/lib/db";
+import { StudentLinkingForm } from "@/components/admin/linking-form";
+import { 
+  getStudentById, 
+  listAttendanceForStudent, 
+  listMisbehaviorReportsForStudent, 
+  listStudents,
+  getUnlinkedUsers
+} from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { updateDisciplinaryEventAction } from "@/app/actions/students";
 import { createTranslator } from "@/lib/i18n";
@@ -80,6 +87,7 @@ export default async function StudentDetailPage({
 
   const attendance = await listAttendanceForStudent(studentId, 20);
   const behaviorReports = await listMisbehaviorReportsForStudent(studentId, 15);
+  const unlinkedUsers = await getUnlinkedUsers("student");
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
@@ -205,6 +213,14 @@ export default async function StudentDetailPage({
             studentId={studentId}
             hasFace={!!student.faceDescriptors}
             lang={lang}
+          />
+
+          {/* Digital Account Linking */}
+          <StudentLinkingForm 
+            studentId={studentId}
+            currentUserId={student.userId || null}
+            currentUserEmail={studentListItem?.userEmail || null}
+            unlinkedUsers={unlinkedUsers}
           />
 
           {/* Disciplinary & Grades */}

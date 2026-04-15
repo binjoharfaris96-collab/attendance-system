@@ -10,6 +10,7 @@ export const idleActionState: ActionState = {
 
 export type Session = {
   email: string;
+  role: string;
   expiresAt: number;
 };
 
@@ -25,11 +26,13 @@ export type Student = {
   breakLatesCount: number;
   createdAt: string;
   updatedAt: string;
+  userId?: string | null;
 };
 
 export type StudentListItem = Student & {
   attendanceCount: number;
   lastAttendanceAt: string | null;
+  userEmail: string | null;
 };
 
 export type AttendanceEvent = {

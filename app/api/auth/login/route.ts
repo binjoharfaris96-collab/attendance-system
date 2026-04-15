@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 
 import { createSession, validateLogin } from "@/lib/auth";
 
-const ALLOWED_DOMAIN = "stu.kfs.sch.sa";
+const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
+const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
 
 function isAllowedEmail(email: string) {
   const domain = email.split("@")[1];
-  return domain === (process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN);
+  return domain === ALLOWED_STUDENT_DOMAIN || domain === ALLOWED_TEACHER_DOMAIN;
 }
 
 export async function POST(request: Request) {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
 
     if (!isAllowedEmail(email)) {
       return NextResponse.json(
-        { success: false, error: `Access denied. Only @${process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN} emails are allowed.` },
+        { success: false, error: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.` },
         { status: 403 },
       );
     }

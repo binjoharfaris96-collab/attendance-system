@@ -44,6 +44,7 @@ function mapStudent(row: Record<string, unknown>): Student {
     breakLatesCount: Number(row.breakLatesCount ?? 0),
     createdAt: String(row.createdAt),
     updatedAt: String(row.updatedAt),
+    userId: row.user_id ? String(row.user_id) : null,
   };
 }
 
@@ -82,6 +83,7 @@ function mapStudentListItem(row: Record<string, unknown>): StudentListItem {
     ...mapStudent(row),
     attendanceCount: Number(row.attendanceCount ?? 0),
     lastAttendanceAt: row.lastAttendanceAt ? String(row.lastAttendanceAt) : null,
+    userEmail: row.userEmail ? String(row.userEmail) : null,
   };
 }
 
@@ -237,6 +239,95 @@ export async function ensureDatabaseReady() {
     created_at TEXT NOT NULL,
     FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
   )`);
+  
+  // Phase 1 ManageBac Upgrades
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS teachers (
+      id TEXT PRIMARY KEY,
+      user_id TEXT UNIQUE,
+      full_name TEXT NOT NULL,
+      department TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      target_role TEXT NOT NULL DEFAULT 'all',
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS classes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      teacher_id TEXT NOT NULL,
+      subject TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS class_students (
+      class_id TEXT NOT NULL,
+      student_id TEXT NOT NULL,
+      PRIMARY KEY (class_id, student_id),
+      FOREIGN KEY(class_id) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS assignments (
+      id TEXT PRIMARY KEY,
+      class_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(class_id) REFERENCES classes(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id TEXT PRIMARY KEY,
+      assignment_id TEXT NOT NULL,
+      student_id TEXT NOT NULL,
+      file_url TEXT,
+      status TEXT NOT NULL,
+      submitted_at TEXT NOT NULL,
+      FOREIGN KEY(assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS grades (
+      id TEXT PRIMARY KEY,
+      submission_id TEXT NOT NULL UNIQUE,
+      score REAL,
+      feedback TEXT,
+      graded_at TEXT NOT NULL,
+      FOREIGN KEY(submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+    )
+  `);
+
   await db.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('late_cutoff_minutes', '470')");
   
   globalForDatabase.isReady = true;
@@ -616,6 +707,9 @@ export async function getDashboardSummary() {
   const rsTotal = await database.execute(`SELECT COUNT(*) AS total FROM students`);
   const totalStudents = Number(rsTotal.rows[0]?.total ?? 0);
 
+  const rsClasses = await database.execute(`SELECT COUNT(*) AS total FROM classes`);
+  const totalClasses = Number(rsClasses.rows[0]?.total ?? 0);
+
   const rsToday = await database.execute({
     sql: `SELECT COUNT(*) AS total FROM attendance_events WHERE attendance_date = :today`,
     args: { today }
@@ -628,10 +722,11 @@ export async function getDashboardSummary() {
   });
   const attendanceLast7Days = Number(rsLast7.rows[0]?.total ?? 0);
 
-  const summary: DashboardSummary = {
+  const summary = {
     totalStudents: Number(totalStudents),
     todayAttendance: Number(todayAttendance),
     attendanceLast7Days: Number(attendanceLast7Days),
+    totalClasses: Number(totalClasses)
   };
 
   return summary;
@@ -1558,4 +1653,595 @@ export async function restoreSystemBackup(payload: unknown) {
   }
 
   await database.batch(ops, "write");
+}
+
+/* 
+ * -------------------------------------------------------------
+ * Phase 2 - Student Portal Methods
+ * -------------------------------------------------------------
+ */
+
+export async function getStudentByUserId(userId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT
+        id,
+        student_code AS studentCode,
+        full_name AS fullName,
+        class_name AS className,
+        face_descriptors AS faceDescriptors,
+        photo_url AS photoUrl,
+        lates_count AS latesCount,
+        excuses_count AS excusesCount,
+        break_lates_count AS breakLatesCount,
+        created_at AS createdAt,
+        updated_at AS updatedAt
+      FROM students
+      WHERE user_id = :userId
+      LIMIT 1
+    `,
+    args: { userId }
+  });
+
+  const row = rs.rows[0];
+  return row ? mapStudent(row as unknown as Record<string, unknown>) : null;
+}
+
+export async function getStudentAttendanceSummary(studentId: string) {
+  const database = await ensureDatabaseReady();
+  // Fetch their total recorded terms vs checked-in days. 
+  // For simplicity derived from existing tables, we check distinct days they checked in.
+  
+  const rsDays = await database.execute(`SELECT COUNT(DISTINCT attendance_date) AS active_days FROM attendance_events`);
+  const totalSchoolDays = Number(rsDays.rows[0]?.active_days || 0) || 1; // avoid / 0
+
+  const rsEvents = await database.execute({
+    sql: `SELECT COUNT(DISTINCT attendance_date) AS present_days FROM attendance_events WHERE student_id = :studentId`,
+    args: { studentId }
+  });
+  const presentDays = Number(rsEvents.rows[0]?.present_days || 0);
+
+  const percentage = Math.round((presentDays / totalSchoolDays) * 100);
+
+  return { totalSchoolDays, presentDays, percentage };
+}
+
+export async function getStudentAssignments(studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT 
+        a.id, 
+        a.title, 
+        a.description, 
+        a.due_date AS dueDate, 
+        c.name AS className,
+        s.status,
+        s.score
+      FROM class_students cs
+      JOIN classes c ON c.id = cs.class_id
+      JOIN assignments a ON a.class_id = c.id
+      LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = :studentId
+      WHERE cs.student_id = :studentId
+      ORDER BY a.due_date ASC
+    `,
+    args: { studentId }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    title: String(row.title),
+    description: String(row.description),
+    dueDate: String(row.dueDate),
+    className: String(row.className),
+    status: row.status ? String(row.status) : "Not Submitted",
+    score: row.score ? Number(row.score) : null
+  }));
+}
+
+export async function getStudentAttendanceEvents(studentId: string, limit = 50) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT 
+        id, 
+        attendance_date AS attendanceDate, 
+        captured_at AS capturedAt,
+        source,
+        notes
+      FROM attendance_events
+      WHERE student_id = :studentId
+      ORDER BY captured_at DESC
+      LIMIT :limit
+    `,
+    args: { studentId, limit }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    attendanceDate: String(row.attendanceDate),
+    capturedAt: String(row.capturedAt),
+    source: String(row.source),
+    notes: row.notes ? String(row.notes) : null
+  }));
+}
+
+/* 
+ * -------------------------------------------------------------
+ * Phase 3 - Teacher Portal Methods
+ * -------------------------------------------------------------
+ */
+
+export async function getTeacherByUserId(userId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT id, user_id AS userId, full_name AS fullName, department
+      FROM teachers
+      WHERE user_id = :userId
+      LIMIT 1
+    `,
+    args: { userId }
+  });
+
+  const row = rs.rows[0];
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    userId: String(row.userId),
+    fullName: String(row.fullName),
+    department: row.department ? String(row.department) : null
+  };
+}
+
+export async function getTeacherClasses(teacherId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT 
+        c.id, c.name, c.subject,
+        (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = c.id) AS studentCount
+      FROM classes c
+      WHERE c.teacher_id = :teacherId
+      ORDER BY c.name ASC
+    `,
+    args: { teacherId }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    name: String(row.name),
+    subject: row.subject ? String(row.subject) : null,
+    studentCount: Number(row.studentCount)
+  }));
+}
+
+export async function getTeacherAssignments(teacherId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT 
+        a.id, a.title, a.due_date AS dueDate, c.name AS className,
+        (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = a.class_id) AS totalStudents,
+        (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id AND s.status = 'Submitted') AS submittedCount
+      FROM assignments a
+      JOIN classes c ON a.class_id = c.id
+      WHERE c.teacher_id = :teacherId
+      ORDER BY a.due_date DESC
+    `,
+    args: { teacherId }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    title: String(row.title),
+    dueDate: String(row.dueDate),
+    className: String(row.className),
+    totalStudents: Number(row.totalStudents),
+    submittedCount: Number(row.submittedCount)
+  }));
+}
+
+export async function insertAssignment(classId: string, title: string, description: string, dueDate: string) {
+  const database = await ensureDatabaseReady();
+  const { randomUUID } = await import("node:crypto");
+  const id = randomUUID();
+  const now = new Date().toISOString();
+
+  await database.execute({
+    sql: `
+      INSERT INTO assignments (id, class_id, title, description, due_date, created_at, updated_at)
+      VALUES (:id, :classId, :title, :description, :dueDate, :now, :now)
+    `,
+    args: { id, classId, title, description, dueDate, now }
+  });
+
+  return id;
+}
+
+
+/* 
+ * -------------------------------------------------------------
+ * Phase 4 - Admin & Communication Methods
+ * -------------------------------------------------------------
+ */
+
+export async function getUnlinkedUsers(role: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT id, email, full_name AS fullName, role
+      FROM users
+      WHERE role = :role
+      AND id NOT IN (SELECT user_id FROM students WHERE user_id IS NOT NULL)
+      AND id NOT IN (SELECT user_id FROM teachers WHERE user_id IS NOT NULL)
+      ORDER BY email ASC
+    `,
+    args: { role }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    email: String(row.email),
+    fullName: String(row.fullName),
+    role: String(row.role)
+  }));
+}
+
+export async function updateStudentUserId(studentId: string, userId: string | null) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE students SET user_id = :userId, updated_at = :now WHERE id = :studentId`,
+    args: { userId, studentId, now: isoNow() }
+  });
+}
+
+export async function updateTeacherUserId(teacherId: string, userId: string | null) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE teachers SET user_id = :userId, updated_at = :now WHERE id = :teacherId`,
+    args: { userId, teacherId, now: isoNow() }
+  });
+}
+
+export async function listTeachers() {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute(`
+    SELECT t.id, t.full_name AS fullName, t.department, t.user_id AS userId, u.email AS userEmail,
+      (SELECT COUNT(*) FROM classes c WHERE c.teacher_id = t.id) AS classesCount
+    FROM teachers t
+    LEFT JOIN users u ON u.id = t.user_id
+    ORDER BY t.full_name ASC
+  `);
+  
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    fullName: String(row.fullName),
+    department: row.department ? String(row.department) : null,
+    userId: row.userId ? String(row.userId) : null,
+    userEmail: row.userEmail ? String(row.userEmail) : null,
+    classesCount: Number(row.classesCount)
+  }));
+}
+
+export async function getTeacherById(id: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `SELECT id, full_name AS fullName, department, user_id AS userId FROM teachers WHERE id = :id`,
+    args: { id }
+  });
+  const row = rs.rows[0];
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    fullName: String(row.fullName),
+    department: row.department ? String(row.department) : null,
+    userId: row.userId ? String(row.userId) : null
+  };
+}
+
+export async function createTeacher(data: { fullName: string, department?: string }) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  const now = isoNow();
+  await database.execute({
+    sql: `INSERT INTO teachers (id, full_name, department, created_at, updated_at) VALUES (:id, :fullName, :department, :now, :now)`,
+    args: { id, fullName: data.fullName, department: data.department || null, now }
+  });
+  return id;
+}
+
+export async function deleteTeacher(id: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `DELETE FROM teachers WHERE id = :id`,
+    args: { id }
+  });
+}
+
+export async function createAnnouncement(title: string, content: string, targetRole: string) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  const now = isoNow();
+  await database.execute({
+    sql: `INSERT INTO announcements (id, title, content, target_role, created_at) VALUES (:id, :title, :content, :targetRole, :now)`,
+    args: { id, title, content, targetRole, now }
+  });
+  return id;
+}
+
+export async function getLatestAnnouncements(role: string, limit = 5) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT id, title, content, target_role AS targetRole, created_at AS createdAt
+      FROM announcements
+      WHERE target_role = 'all' OR target_role = :role
+      ORDER BY created_at DESC
+      LIMIT :limit
+    `,
+    args: { role, limit }
+  });
+  
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    title: String(row.title),
+    content: String(row.content),
+    targetRole: String(row.targetRole),
+    createdAt: String(row.createdAt)
+  }));
+}
+
+export async function listAllAnnouncements() {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute(`SELECT id, title, content, target_role AS targetRole, created_at AS createdAt FROM announcements ORDER BY created_at DESC`);
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    title: String(row.title),
+    content: String(row.content),
+    targetRole: String(row.targetRole),
+    createdAt: String(row.createdAt)
+  }));
+}
+
+export async function deleteAnnouncement(id: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `DELETE FROM announcements WHERE id = :id`,
+    args: { id }
+  });
+}
+
+/* 
+ * -------------------------------------------------------------
+ * Phase 5 - Class Management & Enrollment
+ * -------------------------------------------------------------
+ */
+
+export async function listAllClasses() {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute(`
+    SELECT 
+      c.id, c.name, c.subject, c.created_at AS createdAt,
+      t.full_name AS teacherName,
+      (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = c.id) AS studentCount
+    FROM classes c
+    JOIN teachers t ON t.id = c.teacher_id
+    ORDER BY c.name ASC
+  `);
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    name: String(row.name),
+    subject: row.subject ? String(row.subject) : null,
+    teacherName: String(row.teacherName),
+    studentCount: Number(row.studentCount),
+    createdAt: String(row.createdAt)
+  }));
+}
+
+export async function getClassWithRoster(classId: string) {
+  const database = await ensureDatabaseReady();
+  
+  const rsClass = await database.execute({
+    sql: `
+      SELECT c.*, t.full_name AS teacherName
+      FROM classes c
+      JOIN teachers t ON t.id = c.teacher_id
+      WHERE c.id = :classId
+    `,
+    args: { classId }
+  });
+
+  const classData = rsClass.rows[0];
+  if (!classData) return null;
+
+  const rsRoster = await database.execute({
+    sql: `
+      SELECT s.*
+      FROM students s
+      JOIN class_students cs ON cs.student_id = s.id
+      WHERE cs.class_id = :classId
+      ORDER BY s.full_name ASC
+    `,
+    args: { classId }
+  });
+
+  return {
+    id: String(classData.id),
+    name: String(classData.name),
+    subject: classData.subject ? String(classData.subject) : null,
+    teacherId: String(classData.teacher_id),
+    teacherName: String(classData.teacherName),
+    students: rsRoster.rows.map(row => mapStudent(row as unknown as Record<string, unknown>))
+  };
+}
+
+export async function enrollStudentInClass(studentId: string, classId: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `INSERT OR IGNORE INTO class_students (class_id, student_id) VALUES (:classId, :studentId)`,
+    args: { classId, studentId }
+  });
+}
+
+export async function unenrollStudentFromClass(studentId: string, classId: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `DELETE FROM class_students WHERE class_id = :classId AND student_id = :studentId`,
+    args: { classId, studentId }
+  });
+}
+
+export async function createClass(input: { name: string; teacherId: string; subject?: string }) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  const now = isoNow();
+  await database.execute({
+    sql: `INSERT INTO classes (id, name, teacher_id, subject, created_at, updated_at) VALUES (:id, :name, :teacherId, :subject, :now, :now)`,
+    args: { id, name: input.name, teacherId: input.teacherId, subject: input.subject || null, now }
+  });
+  return id;
+}
+
+export async function deleteClass(classId: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `DELETE FROM classes WHERE id = :classId`,
+    args: { classId }
+  });
+}
+
+export async function updateClassTeacher(classId: string, teacherId: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE classes SET teacher_id = :teacherId, updated_at = :now WHERE id = :classId`,
+    args: { classId, teacherId, now: isoNow() }
+  });
+}
+/* 
+ * -------------------------------------------------------------
+ * Phase 6 - Reporting & Analytics
+ * -------------------------------------------------------------
+ */
+
+export async function getSchoolwideStats() {
+  const database = await ensureDatabaseReady();
+  
+  const rsPresence = await database.execute(`
+    SELECT 
+      attendance_date, 
+      COUNT(*) as count 
+    FROM attendance_events 
+    GROUP BY attendance_date 
+    ORDER BY attendance_date DESC 
+    LIMIT 14
+  `);
+
+  const rsClasses = await database.execute(`
+    SELECT 
+      c.name,
+      (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = c.id) as total,
+      (SELECT COUNT(DISTINCT student_id) FROM attendance_events ae 
+       JOIN class_students cs ON cs.student_id = ae.student_id 
+       WHERE cs.class_id = c.id AND ae.attendance_date = date('now')) as present
+    FROM classes c
+  `);
+
+  return {
+    trends: rsPresence.rows.map(r => ({ date: String(r.attendance_date), count: Number(r.count) })),
+    classPerformance: rsClasses.rows.map(r => ({
+      name: String(r.name),
+      total: Number(r.total),
+      present: Number(r.present),
+      rate: Number(r.total) > 0 ? Math.round((Number(r.present) / Number(r.total)) * 100) : 0
+    }))
+  };
+}
+
+export async function getAtRiskStudents(threshold = 80) {
+  const database = await ensureDatabaseReady();
+  
+  // Get all students and calculate their rate
+  const rsDays = await database.execute(`SELECT COUNT(DISTINCT attendance_date) AS total FROM attendance_events`);
+  const totalDays = Number(rsDays.rows[0]?.total || 0);
+  
+  if (totalDays === 0) return [];
+
+  const rsAtRisk = await database.execute({
+    sql: `
+      SELECT 
+        s.id, s.full_name, s.student_code, s.class_name,
+        COUNT(ae.id) as attended_days
+      FROM students s
+      LEFT JOIN attendance_events ae ON ae.student_id = s.id
+      GROUP BY s.id
+      HAVING (COUNT(ae.id) * 100 / :totalDays) < :threshold
+      ORDER BY attended_days ASC
+    `,
+    args: { totalDays, threshold }
+  });
+
+  return rsAtRisk.rows.map(r => ({
+    id: String(r.id),
+    fullName: String(r.full_name),
+    studentCode: String(r.student_code),
+    className: r.class_name ? String(r.class_name) : 'Unassigned',
+    rate: Math.round((Number(r.attended_days) / totalDays) * 100)
+  }));
+}
+
+export async function listAttendanceReportExtended(options: { 
+  classId?: string; 
+  startDate?: string; 
+  endDate?: string; 
+  limit?: number; 
+}) {
+  const database = await ensureDatabaseReady();
+  let query = `
+    SELECT 
+      ae.*, 
+      s.student_code as studentCode,
+      c.name as className
+    FROM attendance_events ae
+    JOIN students s ON s.id = ae.student_id
+    LEFT JOIN class_students cs ON cs.student_id = s.id
+    LEFT JOIN classes c ON c.id = cs.class_id
+    WHERE 1=1
+  `;
+  const args: any = {};
+
+  if (options.classId) {
+    query += ` AND c.id = :classId `;
+    args.classId = options.classId;
+  }
+  if (options.startDate) {
+    query += ` AND ae.attendance_date >= :startDate `;
+    args.startDate = options.startDate;
+  }
+  if (options.endDate) {
+    query += ` AND ae.attendance_date <= :endDate `;
+    args.endDate = options.endDate;
+  }
+
+  query += ` ORDER BY ae.attendance_date DESC, ae.captured_at DESC `;
+  
+  if (options.limit) {
+    query += ` LIMIT :limit `;
+    args.limit = options.limit;
+  }
+
+  const rs = await database.execute({ sql: query, args });
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    studentId: String(row.student_id),
+    studentCodeSnapshot: String(row.student_code_snapshot),
+    fullNameSnapshot: String(row.full_name_snapshot),
+    classNameSnapshot: row.class_name_snapshot ? String(row.class_name_snapshot) : null,
+    source: String(row.source),
+    notes: row.notes ? String(row.notes) : null,
+    attendanceDate: String(row.attendance_date),
+    capturedAt: String(row.capturedAt)
+  }));
 }

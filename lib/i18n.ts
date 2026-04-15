@@ -1,4 +1,4 @@
-﻿// Centralized translation dictionary for the application.
+// Centralized translation dictionary for the application.
 // Add new keys here and they'll be available everywhere via t(key).
 
 export type AppLanguage = "en" | "ar";
@@ -11,6 +11,8 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "nav.warnings": { en: "Warnings", ar: "تنبيهات" },
   "nav.behavior": { en: "Behavior", ar: "السلوك" },
   "nav.students": { en: "Students", ar: "الطلاب" },
+  "nav.teachers": { en: "Teachers", ar: "المعلمون" },
+  "nav.classes": { en: "Classes", ar: "الفصول" },
   "nav.attendanceLog": { en: "Attendance Log", ar: "سجل الحضور" },
   "nav.statistics": { en: "Statistics", ar: "الإحصائيات" },
   "nav.examMonitor": { en: "Exam Monitor", ar: "مراقبة الامتحان" },
@@ -18,6 +20,7 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "nav.absences": { en: "Absences", ar: "الغياب" },
   "nav.dataExport": { en: "Data Export", ar: "تصدير البيانات" },
   "nav.settings": { en: "Settings", ar: "الإعدادات" },
+  "nav.announcements": { en: "Announcements", ar: "الإعلانات" },
   "nav.helpCenter": { en: "Help Center", ar: "مركز المساعدة" },
   "nav.management": { en: "Management", ar: "الإدارة" },
   "nav.logout": { en: "Log Out", ar: "تسجيل الخروج" },
@@ -91,10 +94,31 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "stats.title": { en: "Statistics & Analytics", ar: "الإحصائيات والتحليلات" },
   "stats.subtitle": { en: "System-wide attendance trends and metrics.", ar: "اتجاهات ومقاييس الحضور على مستوى النظام." },
   "stats.exportData": { en: "Export Data", ar: "تصدير البيانات" },
-  "stats.totalStudentsTracked": { en: "Total Students Tracked", ar: "إجمالي الطلاب المسجلين" },
-  "stats.presentTodayLabel": { en: "Present Today", ar: "الحاضرون اليوم" },
-  "stats.perfectAttendance": { en: "Perfect Attendance", ar: "حضور مثالي" },
-  "stats.totalInfractions": { en: "Total Infractions", ar: "إجمالي المخالفات" },
+  "stats.atRiskMonitor": { en: "At-Risk Monitor", ar: "مرصد الطلبة المعرضين للخطر" },
+  "stats.classRanks": { en: "Class Ranks", ar: "ترتيب الفصول" },
+  "stats.avgAttendance": { en: "Avg. Attendance", ar: "متوسط الحضور" },
+  "stats.sessions": { en: "Recorded Sessions", ar: "الجلسات المسجلة" },
+  "stats.customReport": { en: "Custom Report Generator", ar: "منشئ التقارير المخصصة" },
+  "stats.filterClass": { en: "Filter by Class", ar: "تصفية حسب الفصل" },
+  "stats.downloadCSV": { en: "Download CSV Report", ar: "تحميل تقرير CSV" },
+
+  // Classes & Rosters
+  "classes.title": { en: "Class Management", ar: "إدارة الفصول" },
+  "classes.newClass": { en: "New Class", ar: "فصل جديد" },
+  "classes.name": { en: "Class Name", ar: "اسم الفصل" },
+  "classes.subject": { en: "Subject", ar: "المادة" },
+  "classes.instructor": { en: "Instructor", ar: "المعلم" },
+  "classes.enrollStudents": { en: "Enroll Students", ar: "تسجيل الطلاب" },
+  "classes.roster": { en: "Active Roster", ar: "القائمة النشطة" },
+  "classes.enrolled": { en: "Enrolled", ar: "مسجل" },
+
+  // Announcements
+  "ann.title": { en: "School Announcements", ar: "إعلانات المدرسة" },
+  "ann.post": { en: "Post New Announcement", ar: "نشر إعلان جديد" },
+  "ann.target": { en: "Target Role", ar: "الفئة المستهدفة" },
+  "ann.all": { en: "All Users", ar: "جميع المستخدمين" },
+  "ann.teachersOnly": { en: "Teachers Only", ar: "المعلمون فقط" },
+  "ann.studentsOnly": { en: "Students Only", ar: "الطلاب فقط" },
   "stats.attendanceTrends": { en: "Attendance Trends (Last 14 Days)", ar: "اتجاهات الحضور (آخر 14 يومًا)" },
   "stats.dailyPresent": { en: "Daily present counts across all registered students.", ar: "أعداد الحضور اليومية لجميع الطلاب المسجلين." },
   "stats.noData": { en: "No attendance data for this period yet.", ar: "لا توجد بيانات حضور لهذه الفترة بعد." },
