@@ -1,9 +1,7 @@
-import dynamic from "next/dynamic";
+import { CameraTestPanel } from "@/components/camera-test-panel";
 import { getSetting, listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
-
-const CameraTestPanel = dynamic(() => import("@/components/camera-test-panel").then(mod => mod.CameraTestPanel), { ssr: false });
 export default async function RecognitionPage() {
   const allStudents = await listStudents();
   const unknownFaceAlertsEnabled =
