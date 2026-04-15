@@ -15,6 +15,13 @@ import { getAppLanguage } from "@/lib/i18n-server";
 import { idleActionState } from "@/lib/types";
 import type { ActionState } from "@/lib/types";
 
+const ALLOWED_DOMAIN = "stu.kfs.sch.sa";
+
+function isAllowedEmail(email: string) {
+  const domain = email.split("@")[1];
+  return domain === (process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN);
+}
+
 export async function login(
   previousState: ActionState = idleActionState,
   formData: FormData,
@@ -29,6 +36,13 @@ export async function login(
     return {
       status: "error",
       message: t("login.missingCredentials"),
+    } satisfies ActionState;
+  }
+
+  if (!isAllowedEmail(email)) {
+    return {
+      status: "error",
+      message: `Access denied. Only @${process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
@@ -60,7 +74,14 @@ export async function register(
   if (!fullName || !email || !password) {
     return {
       status: "error",
-      message: t("login.missingCredentials"), // Reusing translation for simplicity
+      message: t("login.missingCredentials"),
+    } satisfies ActionState;
+  }
+
+  if (!isAllowedEmail(email)) {
+    return {
+      status: "error",
+      message: `Access denied. Only @${process.env.ALLOWED_EMAIL_DOMAIN || ALLOWED_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
