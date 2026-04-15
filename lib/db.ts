@@ -87,16 +87,24 @@ function mapStudentListItem(row: Record<string, unknown>): StudentListItem {
 
 function getDatabaseConfig() {
   const isVercel = process.env.VERCEL === "1";
-  const url = process.env.DATABASE_URL;
-  const authToken = process.env.DATABASE_AUTH_TOKEN;
+  const url = process.env.DATABASE_URL?.trim();
+  const authToken = process.env.DATABASE_AUTH_TOKEN?.trim();
 
   if (url) {
-    return { url, authToken };
+    if (!/^(libsql:|https?:|wss?:|file:)/i.test(url)) {
+      throw new Error(
+        "DATABASE_URL must start with libsql:, https://, wss://, or file: (Turso/libSQL). " +
+          "A bare hostname will not connect and signups will not persist.",
+      );
+    }
+    return { url, authToken: authToken || undefined };
   }
 
   if (isVercel) {
-    // Fallback for Vercel if no DATABASE_URL is provided (ephemeral!)
-    return { url: "file:/tmp/attendance.sqlite" };
+    throw new Error(
+      "DATABASE_URL is required on Vercel. Without a Turso (or other libSQL) URL, each " +
+        "server instance uses a temporary database and new accounts are not saved.",
+    );
   }
 
   const dataDirectory = join(process.cwd(), "data");
@@ -316,7 +324,15 @@ export async function createUser(input: {
         :updatedAt
       )
     `,
-    args: user as unknown as any
+    args: {
+      id: user.id,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      fullName: user.fullName,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
   });
 
   return user;

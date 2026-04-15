@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import "./globals.css";
 import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "Smart Attendance AI",
@@ -36,6 +37,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full bg-[var(--color-canvas)] text-[var(--color-ink)] antialiased transition-colors duration-200">
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
