@@ -1,9 +1,9 @@
 import dynamic from "next/dynamic";
-const ExamMonitorPanel = dynamic(() => import("@/components/exam-monitor-panel").then(mod => mod.ExamMonitorPanel), { ssr: false });
 import { getSetting, listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
+const ExamMonitorPanel = dynamic(() => import("@/components/exam-monitor-panel").then(mod => mod.ExamMonitorPanel), { ssr: false });
 export default async function ExamMonitorPage() {
   const allStudents = await listStudents();
   const unknownFaceAlertsEnabled =

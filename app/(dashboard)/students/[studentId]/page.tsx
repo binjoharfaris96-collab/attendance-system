@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 
 import { StudentEditForm, StudentDeleteForm } from "@/components/student-edit-form";
 import dynamic from "next/dynamic";
-const StudentFaceUpdate = dynamic(() => import("@/components/student-face-update").then(mod => mod.StudentFaceUpdate), { ssr: false });
 import { getStudentById, listAttendanceForStudent, listMisbehaviorReportsForStudent, listStudents } from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { updateDisciplinaryEventAction } from "@/app/actions/students";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+
+const StudentFaceUpdate = dynamic(() => import("@/components/student-face-update").then(mod => mod.StudentFaceUpdate), { ssr: false });
 
 function translateIssueTypeLabel(issueType: string, t: (key: string) => string) {
   const map: Record<string, string> = {

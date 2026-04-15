@@ -1,8 +1,5 @@
 import Link from "next/link";
-
-import dynamic from "next/dynamic";
-
-const AttendanceStatusPieChart = dynamic(() => import("@/components/attendance-status-pie-chart").then(mod => mod.AttendanceStatusPieChart), { ssr: false });
+import nextDynamic from "next/dynamic";
 import { AttendanceTrendChart } from "@/components/attendance-trend-chart";
 import {
   getDashboardSummary,
@@ -12,6 +9,8 @@ import {
 } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+
+const AttendanceStatusPieChart = nextDynamic(() => import("@/components/attendance-status-pie-chart").then(mod => mod.AttendanceStatusPieChart), { ssr: false });
 
 export const dynamic = "force-dynamic";
 
