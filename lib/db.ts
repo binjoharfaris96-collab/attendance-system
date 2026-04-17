@@ -61,6 +61,8 @@ function mapAttendanceEvent(row: Record<string, unknown>): AttendanceEvent {
       ? String(row.classNameSnapshot)
       : null,
     source: String(row.source),
+    status: row.status ? String(row.status) : "present",
+    scheduleId: row.schedule_id ? String(row.schedule_id) : null,
     notes: row.notes ? String(row.notes) : null,
     attendanceDate: String(row.attendanceDate),
     capturedAt: String(row.capturedAt),
@@ -686,6 +688,8 @@ export async function listRecentAttendance(limit = 12) {
         full_name_snapshot AS fullNameSnapshot,
         class_name_snapshot AS classNameSnapshot,
         source,
+        status,
+        schedule_id AS scheduleId,
         notes,
         attendance_date AS attendanceDate,
         captured_at AS capturedAt
@@ -737,6 +741,8 @@ export async function listAttendanceReport(limit = 200, date?: string | null) {
           full_name_snapshot AS fullNameSnapshot,
           class_name_snapshot AS classNameSnapshot,
           source,
+          status,
+          schedule_id AS scheduleId,
           notes,
           attendance_date AS attendanceDate,
           captured_at AS capturedAt
