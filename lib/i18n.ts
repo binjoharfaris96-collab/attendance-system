@@ -97,6 +97,8 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "status.present": { en: "Present", ar: "حاضر" },
   "status.absent": { en: "Absent", ar: "غائب" },
   "status.late": { en: "Late", ar: "متأخر" },
+  "status.excused": { en: "Excused", ar: "معذور" },
+  "status.doctor": { en: "Doctor", ar: "طبيب" },
   "status.good": { en: "Good", ar: "جيد" },
   "status.atRisk": { en: "At Risk", ar: "في خطر" },
 
@@ -244,11 +246,6 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "common.absent": { en: "absent", ar: "غائب" },
   "common.checkedIn": { en: "checked in", ar: "تم التسجيل" },
   "common.unassigned": { en: "Unassigned", ar: "غير محدد" },
-  "status.present": { en: "Present", ar: "حاضر" },
-  "status.absent": { en: "Absent", ar: "غائب" },
-  "status.late": { en: "Late", ar: "متأخر" },
-  "status.excused": { en: "Excused", ar: "معذور" },
-  "status.doctor": { en: "Doctor", ar: "طبيب" },
 
   // â”€â”€ Login â”€â”€
   "login.title": { en: "Sign in", ar: "تسجيل الدخول" },
@@ -379,7 +376,6 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "student.recentCheckIns": { en: "Recent check-in records for this student", ar: "سجلات التسجيل الأخيرة لهذا الطالب" },
   "student.noCheckIns": { en: "No check-ins recorded yet.", ar: "لم يتم تسجيل أي حضور بعد." },
   "student.unassigned": { en: "Unassigned", ar: "غير مخصص" },
-  "student.class": { en: "Class / Group", ar: "الصف / المجموعة" },
 
   // â”€â”€ Attendance Check-in â”€â”€
   "checkin.title": { en: "Quick attendance", ar: "تسجيل الحضور السريع" },

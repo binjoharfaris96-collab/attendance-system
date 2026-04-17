@@ -20,6 +20,7 @@ import type {
   Student,
   StudentListItem,
   TodayAttendanceBreakdown,
+  Announcement,
 } from "@/lib/types";
 
 type DatabaseGlobal = {
@@ -80,6 +81,16 @@ function mapMisbehaviorReport(row: Record<string, unknown>): MisbehaviorReport {
     notes: row.notes ? String(row.notes) : null,
     reportedAt: String(row.reportedAt),
     reportedBy: row.reportedBy ? String(row.reportedBy) : null,
+  };
+}
+
+function mapAnnouncement(row: Record<string, unknown>): Announcement {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    content: String(row.content),
+    targetRole: String(row.targetRole ?? row.target_role ?? "all"),
+    createdAt: String(row.createdAt ?? row.created_at),
   };
 }
 
@@ -793,6 +804,27 @@ export async function getDashboardSummary() {
   return summary;
 }
 
+export async function getLatestAnnouncements(role: string, limit: number): Promise<Announcement[]> {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT
+        id,
+        title,
+        content,
+        target_role AS targetRole,
+        created_at AS createdAt
+      FROM announcements
+      WHERE target_role = 'all' OR target_role = :role
+      ORDER BY created_at DESC
+      LIMIT :limit
+    `,
+    args: { role, limit }
+  });
+
+  return rs.rows.map((row) => mapAnnouncement(row as unknown as Record<string, unknown>));
+}
+
 export async function getTodayAttendanceBreakdown(): Promise<TodayAttendanceBreakdown> {
   const database = await ensureDatabaseReady();
   const today = toAttendanceDate(isoNow());
@@ -1038,8 +1070,7 @@ export async function recordAttendanceByStudentCode(input: {
     args: event as any
   });
 
-  // Read late cutoff from settings, default to 470 (7:50 AM)
-  const lateCutoffMinutes = parseInt(await getSetting("late_cutoff_minutes", "470"), 10);
+  // Use existing lateCutoffMinutes from above
 
   if (minutesSinceMidnight > lateCutoffMinutes) {
     await database.execute({
@@ -1075,7 +1106,7 @@ export type UnknownFace = {
 
 export async function recordUnknownFace(base64Image: string) {
   const database = await ensureDatabaseReady();
-  const id = crypto.randomUUID();
+  const id = randomUUID();
   const detectedAt = isoNow();
 
   await database.execute({
@@ -1126,7 +1157,7 @@ export type PhoneDetection = {
 
 export async function recordPhoneDetection(base64Image: string) {
   const database = await ensureDatabaseReady();
-  const id = crypto.randomUUID();
+  const id = randomUUID();
   const detectedAt = isoNow();
 
   await database.execute({
@@ -1341,7 +1372,7 @@ export type Excuse = {
 
 export async function createExcuse(studentId: string, reason: string, excuseDate: string) {
   const database = await ensureDatabaseReady();
-  const id = crypto.randomUUID();
+  const id = randomUUID();
   const now = isoNow();
 
   // Deduct 1 from lates_count and add 1 to excuses_count
@@ -2050,38 +2081,11 @@ export async function createAnnouncement(title: string, content: string, targetR
   return id;
 }
 
-export async function getLatestAnnouncements(role: string, limit = 5) {
-  const database = await ensureDatabaseReady();
-  const rs = await database.execute({
-    sql: `
-      SELECT id, title, content, target_role AS targetRole, created_at AS createdAt
-      FROM announcements
-      WHERE target_role = 'all' OR target_role = :role
-      ORDER BY created_at DESC
-      LIMIT :limit
-    `,
-    args: { role, limit }
-  });
-  
-  return rs.rows.map(row => ({
-    id: String(row.id),
-    title: String(row.title),
-    content: String(row.content),
-    targetRole: String(row.targetRole),
-    createdAt: String(row.createdAt)
-  }));
-}
 
 export async function listAllAnnouncements() {
   const database = await ensureDatabaseReady();
   const rs = await database.execute(`SELECT id, title, content, target_role AS targetRole, created_at AS createdAt FROM announcements ORDER BY created_at DESC`);
-  return rs.rows.map(row => ({
-    id: String(row.id),
-    title: String(row.title),
-    content: String(row.content),
-    targetRole: String(row.targetRole),
-    createdAt: String(row.createdAt)
-  }));
+  return rs.rows.map(row => mapAnnouncement(row as unknown as Record<string, unknown>));
 }
 
 export async function deleteAnnouncement(id: string) {

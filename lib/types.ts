@@ -94,3 +94,11 @@ export type MisbehaviorReport = {
   reportedAt: string;
   reportedBy: string | null;
 };
+
+export type Announcement = {
+  id: string;
+  title: string;
+  content: string;
+  targetRole: string;
+  createdAt: string;
+};

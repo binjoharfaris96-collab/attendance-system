@@ -1,6 +1,7 @@
 import { getLatestAnnouncements } from "@/lib/db";
 import { Megaphone, Calendar, School, Users, GraduationCap } from "lucide-react";
 import { formatDateTime } from "@/lib/time";
+import type { Announcement } from "@/lib/types";
 
 export async function AnnouncementFeed({ role, limit = 3 }: { role: string; limit?: number }) {
   const announcements = await getLatestAnnouncements(role, limit);
