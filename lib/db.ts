@@ -990,6 +990,9 @@ export async function recordAttendanceByStudentCode(input: {
     };
   }
 
+  const lateCutoffMinutes = parseInt(await getSetting("late_cutoff_minutes", "DEFAULT"), 10);
+  const status = minutesSinceMidnight > lateCutoffMinutes ? "late" : "present";
+
   const event: AttendanceEvent = {
     id: randomUUID(),
     studentId: mappedStudent.id,
@@ -997,6 +1000,8 @@ export async function recordAttendanceByStudentCode(input: {
     fullNameSnapshot: mappedStudent.fullName,
     classNameSnapshot: mappedStudent.className,
     source: input.source?.trim() || "manual_checkin",
+    status,
+    scheduleId: null,
     notes: sanitizeOptional(input.notes),
     attendanceDate,
     capturedAt,
@@ -1011,6 +1016,8 @@ export async function recordAttendanceByStudentCode(input: {
         full_name_snapshot,
         class_name_snapshot,
         source,
+        status,
+        schedule_id,
         notes,
         attendance_date,
         captured_at
@@ -1021,6 +1028,8 @@ export async function recordAttendanceByStudentCode(input: {
         :fullNameSnapshot,
         :classNameSnapshot,
         :source,
+        :status,
+        :scheduleId,
         :notes,
         :attendanceDate,
         :capturedAt
@@ -1501,7 +1510,7 @@ export async function exportSystemBackup(): Promise<SystemBackupPayload> {
     database.execute(`
       SELECT id, student_id AS studentId, student_code_snapshot AS studentCodeSnapshot, 
              full_name_snapshot AS fullNameSnapshot, class_name_snapshot AS classNameSnapshot, 
-             source, notes, attendance_date AS attendanceDate, captured_at AS capturedAt
+             source, status, schedule_id AS scheduleId, notes, attendance_date AS attendanceDate, captured_at AS capturedAt
       FROM attendance_events ORDER BY captured_at ASC
     `),
     database.execute(`SELECT id, image_data AS imageData, detected_at AS detectedAt FROM unknown_faces ORDER BY detected_at ASC`),
@@ -1573,6 +1582,8 @@ export async function restoreSystemBackup(payload: unknown) {
       fullNameSnapshot: asString(event.fullNameSnapshot),
       classNameSnapshot: asNullableString(event.classNameSnapshot),
       source: asString(event.source) || "manual_checkin",
+      status: asString(event.status) || "present",
+      scheduleId: asNullableString(event.scheduleId),
       notes: asNullableString(event.notes),
       attendanceDate: asString(event.attendanceDate),
       capturedAt: asString(event.capturedAt) || isoNow(),
@@ -1671,7 +1682,7 @@ export async function restoreSystemBackup(payload: unknown) {
 
   for (const event of attendanceEvents) {
     ops.push({
-      sql: `INSERT INTO attendance_events (id, student_id, student_code_snapshot, full_name_snapshot, class_name_snapshot, source, notes, attendance_date, captured_at) VALUES (:id, :studentId, :studentCodeSnapshot, :fullNameSnapshot, :classNameSnapshot, :source, :notes, :attendanceDate, :capturedAt)`,
+      sql: `INSERT INTO attendance_events (id, student_id, student_code_snapshot, full_name_snapshot, class_name_snapshot, source, status, schedule_id, notes, attendance_date, captured_at) VALUES (:id, :studentId, :studentCodeSnapshot, :fullNameSnapshot, :classNameSnapshot, :source, :status, :scheduleId, :notes, :attendanceDate, :capturedAt)`,
       args: event
     });
   }
@@ -1810,6 +1821,8 @@ export async function getStudentAttendanceEvents(studentId: string, limit = 50) 
         attendance_date AS attendanceDate, 
         captured_at AS capturedAt,
         source,
+        status,
+        schedule_id AS scheduleId,
         notes
       FROM attendance_events
       WHERE student_id = :studentId
@@ -1824,6 +1837,8 @@ export async function getStudentAttendanceEvents(studentId: string, limit = 50) 
     attendanceDate: String(row.attendanceDate),
     capturedAt: String(row.capturedAt),
     source: String(row.source),
+    status: row.status ? String(row.status) : "present",
+    scheduleId: row.scheduleId ? String(row.scheduleId) : null,
     notes: row.notes ? String(row.notes) : null
   }));
 }
