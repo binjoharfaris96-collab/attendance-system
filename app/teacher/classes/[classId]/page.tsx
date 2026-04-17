@@ -8,7 +8,8 @@ import { AlertCircle, Users, GraduationCap, ArrowLeft, User } from "lucide-react
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export default async function TeacherClassDetailPage({ params }: { params: { classId: string } }) {
+export default async function TeacherClassDetailPage({ params }: { params: Promise<{ classId: string }> }) {
+  const { classId } = await params;
   const session = await requireSession();
   const user = await getUserByEmail(session.email);
   const teacherProfile = user ? await getTeacherByUserId(user.id) : null;
@@ -23,7 +24,7 @@ export default async function TeacherClassDetailPage({ params }: { params: { cla
     );
   }
 
-  const classData = await getClassWithRoster(params.classId);
+  const classData = await getClassWithRoster(classId);
   if (!classData || classData.teacherId !== teacherProfile.id) {
     notFound();
   }

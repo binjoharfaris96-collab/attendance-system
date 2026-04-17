@@ -20,6 +20,9 @@ function parseStudentFields(formData: FormData) {
     studentCode: String(formData.get("studentCode") ?? "").trim(),
     fullName: String(formData.get("fullName") ?? "").trim(),
     className: String(formData.get("className") ?? "").trim(),
+    dateOfBirth: formData.has("dateOfBirth") ? String(formData.get("dateOfBirth") ?? "").trim() : undefined,
+    parentName: formData.has("parentName") ? String(formData.get("parentName") ?? "").trim() : undefined,
+    parentPhone: formData.has("parentPhone") ? String(formData.get("parentPhone") ?? "").trim() : undefined,
   };
 
   if (formData.has("faceDescriptors")) {
@@ -137,6 +140,7 @@ export async function updateStudentAction(
   }
 
   try {
+    const { updateStudent } = await import("@/lib/db");
     await updateStudent(studentId, input);
   } catch (error) {
     return {

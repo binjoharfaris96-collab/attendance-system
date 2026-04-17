@@ -7,8 +7,8 @@ import { deleteClassAction } from "@/app/actions/admin";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { UnenrollButton } from "@/components/admin/unenroll-button";
 
-export default async function ClassDetailPage({ params }: { params: { classId: string } }) {
-  const classId = params.classId;
+export default async function ClassDetailPage({ params }: { params: Promise<{ classId: string }> }) {
+  const { classId } = await params;
   const classData = await getClassWithRoster(classId);
   if (!classData) notFound();
 

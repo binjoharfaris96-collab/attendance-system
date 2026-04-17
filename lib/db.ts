@@ -45,6 +45,9 @@ function mapStudent(row: Record<string, unknown>): Student {
     createdAt: String(row.createdAt),
     updatedAt: String(row.updatedAt),
     userId: row.user_id ? String(row.user_id) : null,
+    dateOfBirth: row.dateOfBirth ? String(row.dateOfBirth) : null,
+    parentName: row.parentName ? String(row.parentName) : null,
+    parentPhone: row.parentPhone ? String(row.parentPhone) : null,
   };
 }
 
@@ -131,7 +134,12 @@ async function initializeDatabase(client: Client) {
       excuses_count INTEGER DEFAULT 0,
       break_lates_count INTEGER DEFAULT 0,
       created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      user_id TEXT,
+      date_of_birth TEXT,
+      parent_name TEXT,
+      parent_phone TEXT,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
     )`,
     `CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -149,13 +157,29 @@ async function initializeDatabase(client: Client) {
       full_name_snapshot TEXT NOT NULL,
       class_name_snapshot TEXT,
       source TEXT NOT NULL,
+      status TEXT DEFAULT 'Present',
+      schedule_id TEXT,
       notes TEXT,
       attendance_date TEXT NOT NULL,
       captured_at TEXT NOT NULL,
-      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,
+      FOREIGN KEY(schedule_id) REFERENCES schedules(id) ON DELETE SET NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS schedules (
+      id TEXT PRIMARY KEY,
+      class_id TEXT NOT NULL,
+      teacher_id TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      day_of_week TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(class_id) REFERENCES classes(id) ON DELETE CASCADE,
+      FOREIGN KEY(teacher_id) REFERENCES teachers(id) ON DELETE CASCADE
     )`,
     "CREATE INDEX IF NOT EXISTS idx_attendance_events_student ON attendance_events(student_id, captured_at DESC)",
-    "CREATE INDEX IF NOT EXISTS idx_attendance_events_date ON attendance_events(attendance_date, captured_at DESC)"
+    "CREATE INDEX IF NOT EXISTS idx_attendance_events_date ON attendance_events(attendance_date, captured_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_attendance_events_schedule ON attendance_events(schedule_id, attendance_date)"
   ], "write");
 }
 
@@ -224,9 +248,19 @@ export async function ensureDatabaseReady() {
   }
   try {
     await db.execute("ALTER TABLE students ADD COLUMN photo_url TEXT");
-  } catch {
-    /* duplicate column or unsupported */
-  }
+  } catch { /* duplicate */ }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
+  } catch { /* duplicate */ }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN date_of_birth TEXT");
+  } catch { /* duplicate */ }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN parent_name TEXT");
+  } catch { /* duplicate */ }
+  try {
+    await db.execute("ALTER TABLE students ADD COLUMN parent_phone TEXT");
+  } catch { /* duplicate */ }
 
   await db.execute(`CREATE TABLE IF NOT EXISTS unknown_faces (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
   await db.execute(`CREATE TABLE IF NOT EXISTS phone_detections (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
@@ -1795,6 +1829,8 @@ export async function getTeacherByUserId(userId: string) {
   };
 }
 
+
+
 export async function getTeacherClasses(teacherId: string) {
   const database = await ensureDatabaseReady();
   const rs = await database.execute({
@@ -1926,6 +1962,7 @@ export async function listTeachers() {
 }
 
 export async function getTeacherById(id: string) {
+  if (!id) return null;
   const database = await ensureDatabaseReady();
   const rs = await database.execute({
     sql: `SELECT id, full_name AS fullName, department, user_id AS userId FROM teachers WHERE id = :id`,
@@ -2244,4 +2281,312 @@ export async function listAttendanceReportExtended(options: {
     attendanceDate: String(row.attendance_date),
     capturedAt: String(row.capturedAt)
   }));
+}
+
+/* 
+ * -------------------------------------------------------------
+ * Phase 7 - Scheduling & Manual Attendance
+ * -------------------------------------------------------------
+ */
+
+export async function listAllSchedules() {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute(`
+    SELECT 
+      s.*, 
+      c.name AS className, 
+      t.full_name AS teacherName
+    FROM schedules s
+    JOIN classes c ON c.id = s.class_id
+    JOIN teachers t ON t.id = s.teacher_id
+    ORDER BY 
+      CASE day_of_week
+        WHEN 'Monday' THEN 1
+        WHEN 'Tuesday' THEN 2
+        WHEN 'Wednesday' THEN 3
+        WHEN 'Thursday' THEN 4
+        WHEN 'Friday' THEN 5
+        WHEN 'Saturday' THEN 6
+        WHEN 'Sunday' THEN 7
+      END,
+      start_time ASC
+  `);
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    classId: String(row.class_id),
+    className: String(row.className),
+    teacherId: String(row.teacher_id),
+    teacherName: String(row.teacherName),
+    subject: String(row.subject),
+    dayOfWeek: String(row.day_of_week),
+    startTime: String(row.start_time),
+    endTime: String(row.end_time)
+  }));
+}
+
+export async function getTeacherSchedules(teacherId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT s.*, c.name AS className
+      FROM schedules s
+      JOIN classes c ON c.id = s.class_id
+      WHERE s.teacher_id = :teacherId
+      ORDER BY 
+        CASE day_of_week
+          WHEN 'Monday' THEN 1
+          WHEN 'Tuesday' THEN 2
+          WHEN 'Wednesday' THEN 3
+          WHEN 'Thursday' THEN 4
+          WHEN 'Friday' THEN 5
+          WHEN 'Saturday' THEN 6
+          WHEN 'Sunday' THEN 7
+        END,
+        start_time ASC
+    `,
+    args: { teacherId }
+  });
+
+  return rs.rows.map(row => ({
+    id: String(row.id),
+    classId: String(row.class_id),
+    className: String(row.className),
+    subject: String(row.subject),
+    dayOfWeek: String(row.day_of_week),
+    startTime: String(row.start_time),
+    endTime: String(row.end_time)
+  }));
+}
+
+export async function createSchedule(input: {
+  classId: string;
+  teacherId: string;
+  subject: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
+}) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  const now = isoNow();
+  await database.execute({
+    sql: `
+      INSERT INTO schedules (id, class_id, teacher_id, subject, day_of_week, start_time, end_time, created_at)
+      VALUES (:id, :classId, :teacherId, :subject, :dayOfWeek, :startTime, :endTime, :now)
+    `,
+    args: { 
+      id, 
+      classId: input.classId, 
+      teacherId: input.teacherId, 
+      subject: input.subject, 
+      dayOfWeek: input.dayOfWeek, 
+      startTime: input.startTime, 
+      endTime: input.endTime, 
+      now 
+    }
+  });
+  return id;
+}
+
+export async function deleteSchedule(id: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `DELETE FROM schedules WHERE id = :id`,
+    args: { id }
+  });
+}
+
+export async function getScheduleWithAttendance(scheduleId: string, date: string) {
+  const database = await ensureDatabaseReady();
+  
+  // 1. Get schedule info
+  const rsSchedule = await database.execute({
+    sql: `
+      SELECT s.*, c.name AS className, t.full_name AS teacherName
+      FROM schedules s
+      JOIN classes c ON c.id = s.class_id
+      JOIN teachers t ON t.id = s.teacher_id
+      WHERE s.id = :scheduleId
+    `,
+    args: { scheduleId }
+  });
+
+  const schedule = rsSchedule.rows[0];
+  if (!schedule) return null;
+
+  // 2. Get all students in that class
+  const rsStudents = await database.execute({
+    sql: `
+      SELECT s.id, s.full_name, s.student_code
+      FROM students s
+      JOIN class_students cs ON cs.student_id = s.id
+      WHERE cs.class_id = :classId
+      ORDER BY s.full_name ASC
+    `,
+    args: { classId: String(schedule.class_id) }
+  });
+
+  // 3. Get existing attendance for this schedule and date
+  const rsAttendance = await database.execute({
+    sql: `
+      SELECT student_id, status, notes
+      FROM attendance_events
+      WHERE schedule_id = :scheduleId AND attendance_date = :date
+    `,
+    args: { scheduleId, date }
+  });
+
+  const attendanceMap = new Map(rsAttendance.rows.map(r => [String(r.student_id), { status: String(r.status), notes: r.notes ? String(r.notes) : null }]));
+
+  return {
+    id: String(schedule.id),
+    className: String(schedule.className),
+    subject: String(schedule.subject),
+    teacherName: String(schedule.teacherName),
+    students: rsStudents.rows.map(s => ({
+      id: String(s.id),
+      fullName: String(s.full_name),
+      studentCode: String(s.student_code),
+      attendance: attendanceMap.get(String(s.id)) || null
+    }))
+  };
+}
+
+export async function markManualAttendance(input: {
+  studentId: string;
+  scheduleId: string;
+  date: string;
+  status: string;
+  notes?: string;
+}) {
+  const database = await ensureDatabaseReady();
+  
+  // Get student snapshot info for the record
+  const rsStudent = await database.execute({
+    sql: `SELECT full_name, student_code, class_name FROM students WHERE id = :studentId`,
+    args: { studentId: input.studentId }
+  });
+  
+  const student = rsStudent.rows[0];
+  if (!student) throw new Error("Student not found");
+
+  const id = randomUUID();
+  const now = isoNow();
+
+  // We use INSERT OR REPLACE logic manually by checking if exists or using a single query if LibSQL supports it.
+  // Actually, let's just delete any existing record for this student/schedule/date first to keep it simple.
+  await database.execute({
+    sql: `DELETE FROM attendance_events WHERE student_id = :studentId AND schedule_id = :scheduleId AND attendance_date = :date`,
+    args: { studentId: input.studentId, scheduleId: input.scheduleId, date: input.date }
+  });
+
+  await database.execute({
+    sql: `
+      INSERT INTO attendance_events (
+        id, student_id, student_code_snapshot, full_name_snapshot, class_name_snapshot, 
+        source, status, schedule_id, notes, attendance_date, captured_at
+      )
+      VALUES (
+        :id, :studentId, :studentCode, :fullName, :className, 
+        'manual', :status, :scheduleId, :notes, :date, :now
+      )
+    `,
+    args: {
+      id,
+      studentId: input.studentId,
+      studentCode: String(student.student_code),
+      fullName: String(student.full_name),
+      className: student.class_name ? String(student.class_name) : null,
+      status: input.status,
+      scheduleId: input.scheduleId,
+      notes: input.notes || null,
+      date: input.date,
+      now
+    }
+  });
+
+  // Increment counters on student table if applicable
+  if (input.status === 'Late') {
+    await database.execute({
+      sql: `UPDATE students SET lates_count = lates_count + 1 WHERE id = :studentId`,
+      args: { studentId: input.studentId }
+    });
+  } else if (input.status === 'Excused') {
+    await database.execute({
+      sql: `UPDATE students SET excuses_count = excuses_count + 1 WHERE id = :studentId`,
+      args: { studentId: input.studentId }
+    });
+  }
+
+  return id;
+}
+
+export async function registerStudentUser(input: {
+  fullName: string;
+  email: string;
+  passwordHash: string;
+  dateOfBirth: string;
+  parentName: string;
+  parentPhone: string;
+  studentCode: string;
+}) {
+  const database = await ensureDatabaseReady();
+  const userId = randomUUID();
+  const studentId = randomUUID();
+  const now = isoNow();
+
+  await database.batch([
+    {
+      sql: `INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at) 
+            VALUES (:userId, :email, :passwordHash, :fullName, 'student', :now, :now)`,
+      args: { userId, email: input.email, passwordHash: input.passwordHash, fullName: input.fullName, now }
+    },
+    {
+      sql: `INSERT INTO students (id, student_code, full_name, user_id, date_of_birth, parent_name, parent_phone, created_at, updated_at) 
+            VALUES (:studentId, :studentCode, :fullName, :userId, :dateOfBirth, :parentName, :parentPhone, :now, :now)`,
+      args: { 
+        studentId, 
+        studentCode: input.studentCode, 
+        fullName: input.fullName, 
+        userId, 
+        dateOfBirth: input.dateOfBirth, 
+        parentName: input.parentName, 
+        parentPhone: input.parentPhone, 
+        now 
+      }
+    }
+  ], "write");
+
+  return { userId, studentId };
+}
+
+export async function updateStudentProfile(studentId: string, input: {
+  fullName: string;
+  dateOfBirth?: string;
+  parentName?: string;
+  parentPhone?: string;
+  studentCode: string;
+}) {
+  const database = await ensureDatabaseReady();
+  const now = isoNow();
+  await database.execute({
+    sql: `UPDATE students SET 
+            full_name = :fullName, 
+            date_of_birth = :dateOfBirth, 
+            parent_name = :parentName, 
+            parent_phone = :parentPhone,
+            student_code = :studentCode,
+            updated_at = :now 
+          WHERE id = :studentId`,
+    args: { 
+      studentId, 
+      fullName: input.fullName, 
+      dateOfBirth: input.dateOfBirth || null, 
+      parentName: input.parentName || null, 
+      parentPhone: input.parentPhone || null,
+      studentCode: input.studentCode,
+      now 
+    }
+  });
 }

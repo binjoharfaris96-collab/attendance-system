@@ -27,6 +27,9 @@ export type Student = {
   createdAt: string;
   updatedAt: string;
   userId?: string | null;
+  dateOfBirth: string | null;
+  parentName: string | null;
+  parentPhone: string | null;
 };
 
 export type StudentListItem = Student & {
@@ -42,9 +45,23 @@ export type AttendanceEvent = {
   fullNameSnapshot: string;
   classNameSnapshot: string | null;
   source: string;
+  status: string;
+  scheduleId: string | null;
   notes: string | null;
   attendanceDate: string;
   capturedAt: string;
+};
+
+export type Schedule = {
+  id: string;
+  classId: string;
+  className: string;
+  teacherId: string;
+  teacherName?: string;
+  subject: string;
+  dayOfWeek: string;
+  startTime: string;
+  endTime: string;
 };
 
 export type DashboardSummary = {

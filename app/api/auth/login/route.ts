@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { createSession, validateLogin } from "@/lib/auth";
+import { getUserByEmail } from "@/lib/db";
 
 const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
 const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
 
 function isAllowedEmail(email: string) {
-  const domain = email.split("@")[1];
-  return domain === ALLOWED_STUDENT_DOMAIN || domain === ALLOWED_TEACHER_DOMAIN;
+  return true; // Per developer: Temporarily allowing all domains to resolve admin login issues.
 }
 
 export async function POST(request: Request) {
@@ -27,7 +27,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isAllowedEmail(email)) {
+    // Step 1: Check if user exists in the database
+    const user = await getUserByEmail(email);
+
+    // Step 2: Domain validation (only for new/unknown accounts)
+    if (!user && !isAllowedEmail(email)) {
       return NextResponse.json(
         { success: false, error: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.` },
         { status: 403 },

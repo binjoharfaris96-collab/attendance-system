@@ -8,8 +8,8 @@ import { TeacherLinkingForm } from "@/components/admin/teacher-linking-form";
 import { deleteTeacherAction } from "@/app/actions/admin";
 import { DeleteButton } from "@/components/admin/delete-button";
 
-export default async function TeacherDetailPage({ params }: { params: { teacherId: string } }) {
-  const teacherId = params.teacherId;
+export default async function TeacherDetailPage({ params }: { params: Promise<{ teacherId: string }> }) {
+  const { teacherId } = await params;
   const teacher = await getTeacherById(teacherId);
   if (!teacher) notFound();
 

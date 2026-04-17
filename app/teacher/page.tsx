@@ -1,7 +1,8 @@
 import { requireSession } from "@/lib/auth";
-import { getUserByEmail, getTeacherByUserId, getTeacherClasses, getTeacherAssignments } from "@/lib/db";
-import { AlertCircle, CheckCircle2, GraduationCap, CopyCheck, Users } from "lucide-react";
+import { getUserByEmail, getTeacherByUserId, getTeacherClasses, getTeacherAssignments, getTeacherSchedules } from "@/lib/db";
+import { AlertCircle, CheckCircle2, GraduationCap, CopyCheck, Users, Clock, Calendar } from "lucide-react";
 import { AnnouncementFeed } from "@/components/announcement-feed";
+import Link from "next/link";
 
 export default async function TeacherPortalPage() {
   const session = await requireSession();
@@ -30,6 +31,11 @@ export default async function TeacherPortalPage() {
 
   const classes = await getTeacherClasses(teacherProfile.id);
   const assignments = await getTeacherAssignments(teacherProfile.id);
+  const allSchedules = await getTeacherSchedules(teacherProfile.id);
+  
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const todayName = days[new Date().getDay()];
+  const todaySchedules = allSchedules.filter(s => s.dayOfWeek === todayName);
   
   // Calculate raw number of submissions awaiting grading
   const totalSubmissions = assignments.reduce((acc, curr) => acc + curr.submittedCount, 0);
@@ -79,30 +85,53 @@ export default async function TeacherPortalPage() {
             Tasks currently awaiting your review.
           </div>
         </div>
-
-        {/* Action Quick Link */}
-        <div className="card p-6 border-transparent bg-gradient-to-br from-[var(--surface-2)] to-[var(--surface-1)]">
-          <h2 className="text-lg font-bold text-[var(--color-ink)] mb-3">Quick Actions</h2>
-          <div className="space-y-3">
-            <a href="/teacher/assignments" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-[var(--surface-2)] transition-colors border border-[var(--color-line)] bg-[var(--surface-1)]">
-              <div className="bg-[var(--color-accent)]/10 p-2 rounded-lg text-[var(--color-accent)]">
-                <CopyCheck className="w-5 h-5" />
-              </div>
-              <div className="font-medium">Create Assignment</div>
-            </a>
-            <a href="/teacher/classes" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-[var(--surface-2)] transition-colors border border-[var(--color-line)] bg-[var(--surface-1)]">
-              <div className="bg-emerald-500/10 p-2 rounded-lg text-emerald-600">
-                <Users className="w-5 h-5" />
-              </div>
-              <div className="font-medium">View Rosters</div>
-            </a>
-          </div>
-        </div>
       </div>
 
-      <div className="pt-4">
-         <AnnouncementFeed role="teacher" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Today's Schedule */}
+        <div className="card p-0 overflow-hidden border-t-4 border-t-[var(--color-accent)]">
+          <div className="p-4 border-b border-[var(--color-line)] bg-[var(--surface-2)] flex items-center justify-between">
+            <h3 className="font-bold flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[var(--color-accent)]" />
+              Today's Schedule ({todayName})
+            </h3>
+          </div>
+          <div className="divide-y divide-[var(--color-line)]">
+            {todaySchedules.length === 0 ? (
+              <div className="p-12 text-center text-[var(--color-muted)] italic">
+                No classes scheduled for today.
+              </div>
+            ) : (
+              todaySchedules.map(slot => (
+                <div key={slot.id} className="p-4 hover:bg-[var(--surface-2)] transition-colors flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--surface-2)] border border-[var(--color-line)] flex flex-col items-center justify-center group-hover:bg-[var(--color-accent)] group-hover:text-white transition-colors">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-[10px] font-bold mt-1 leading-none">{slot.startTime.split(':')[0]}:{slot.startTime.split(':')[1]}</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[var(--color-ink)]">{slot.subject}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{slot.className}</p>
+                    </div>
+                  </div>
+                  <Link 
+                    href={`/teacher/attendance/${slot.id}`}
+                    className="btn btn-primary h-9 px-4 rounded-lg text-xs font-bold shadow-sm"
+                  >
+                    Mark Attendance
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Assignments Feed or Announcements */}
+        <div>
+           <AnnouncementFeed role="teacher" />
+        </div>
       </div>
     </div>
   );
 }
+

@@ -7,8 +7,7 @@ const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
 const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
 
 function isAllowedEmail(email: string) {
-  const domain = email.split("@")[1];
-  return domain === ALLOWED_STUDENT_DOMAIN || domain === ALLOWED_TEACHER_DOMAIN;
+  return true; // Per developer: Temporarily allowing all domains to resolve admin login issues.
 }
 
 export async function POST(request: Request) {

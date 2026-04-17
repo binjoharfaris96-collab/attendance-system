@@ -84,6 +84,47 @@ export function StudentEditForm({ student, lang = "en" }: StudentEditFormProps) 
         />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="field-label" htmlFor="dateOfBirth">
+            {t("student.dateOfBirth", lang)}
+          </label>
+          <input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            defaultValue={student.dateOfBirth ?? ""}
+            className="field-input"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="field-label" htmlFor="parentName">
+            {t("student.parentName", lang)}
+          </label>
+          <input
+            id="parentName"
+            name="parentName"
+            defaultValue={student.parentName ?? ""}
+            className="field-input"
+            placeholder="Guardian Full Name"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="field-label" htmlFor="parentPhone">
+          {t("student.parentPhone", lang)}
+        </label>
+        <input
+          id="parentPhone"
+          name="parentPhone"
+          defaultValue={student.parentPhone ?? ""}
+          className="field-input"
+          placeholder="+966..."
+        />
+      </div>
+
       <div className="mt-6 flex items-center gap-3 border-t border-[var(--color-line)] pt-5">
         <SubmitButton
           label={t("student.saveChanges", lang)}

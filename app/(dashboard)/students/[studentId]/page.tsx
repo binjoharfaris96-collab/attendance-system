@@ -115,6 +115,29 @@ export default async function StudentDetailPage({
         {/* Left Column: Edit form, Delete form, Behavior Reports, Attendance History */}
         <div className="space-y-6">
           <StudentEditForm student={student} lang={lang} />
+          
+          {/* Profile Overview Card */}
+          <div className="card space-y-4 border-l-4 border-l-blue-500">
+            <h2 className="text-lg font-bold text-[var(--color-ink)] flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="text-blue-500"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Student Profile Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Date of Birth</p>
+                  <p className="text-sm font-bold text-[var(--color-ink)]">{student.dateOfBirth || "Not provided"}</p>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Parent / Guardian</p>
+                  <p className="text-sm font-bold text-[var(--color-ink)]">{student.parentName || "Not provided"}</p>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Parent Phone</p>
+                  <p className="text-sm font-bold font-mono text-blue-600">{student.parentPhone || "Not provided"}</p>
+               </div>
+            </div>
+          </div>
+
           <StudentDeleteForm studentId={student.id} lang={lang} />
 
           {/* Behavior reports - Moved to left column */}

@@ -103,17 +103,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/login?error=no_email", request.url));
     }
 
-    // Domain validation
+    // Domain validation (Temporarily allowing all for admin recovery)
     const emailDomain = email.split("@")[1];
     let role = "student";
 
-    if (emailDomain === "stu.kfs.sch.sa") {
+    if (email === "binjoharf@gmail.com" || email === "binjowarf@gmail.com" || email === "binjoharfaris96@gmail.com") {
+      role = "admin";
+    } else if (emailDomain === "stu.kfs.sch.sa") {
       role = "student";
     } else if (emailDomain === "kfs.sch.sa") {
-      role = "teacher"; // Note: admins are typically pre-created manually, so we default to teacher
+      role = "teacher";
     } else {
-      console.log(`[OAuth] BLOCKED: ${email} — domain "${emailDomain}" is not permitted.`);
-      return NextResponse.redirect(new URL("/login?error=domain", request.url));
+      // Allow other domains for now to investigate admin issues, but default to student
+      role = "student";
     }
 
     let user = await getUserByEmail(email);

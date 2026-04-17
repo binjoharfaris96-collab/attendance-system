@@ -12,7 +12,9 @@ import {
   deleteClass,
   enrollStudentInClass,
   unenrollStudentFromClass,
-  updateClassTeacher
+  updateClassTeacher,
+  createSchedule,
+  deleteSchedule
 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
@@ -192,5 +194,44 @@ export async function updateClassTeacherAction(formData: FormData) {
     return { success: true };
   } catch (err: any) {
     return { error: err.message || "Failed to update teacher" };
+  }
+}
+
+export async function createScheduleAction(formData: FormData) {
+  const session = await requireSession();
+  if (session.role !== "admin") return { error: "Access denied" };
+
+  const classId = formData.get("classId") as string;
+  const teacherId = formData.get("teacherId") as string;
+  const subject = formData.get("subject") as string;
+  const dayOfWeek = formData.get("dayOfWeek") as string;
+  const startTime = formData.get("startTime") as string;
+  const endTime = formData.get("endTime") as string;
+
+  if (!classId || !teacherId || !subject || !dayOfWeek || !startTime || !endTime) {
+    return { error: "All fields are required" };
+  }
+
+  try {
+    await createSchedule({ classId, teacherId, subject, dayOfWeek, startTime, endTime });
+    revalidatePath("/dashboard/schedules");
+    revalidatePath("/teacher"); // Teacher might need updated schedule
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Failed to create schedule" };
+  }
+}
+
+export async function deleteScheduleAction(id: string) {
+  const session = await requireSession();
+  if (session.role !== "admin") return { error: "Access denied" };
+
+  try {
+    await deleteSchedule(id);
+    revalidatePath("/dashboard/schedules");
+    revalidatePath("/teacher");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Failed to delete schedule" };
   }
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { StudentAddModal } from "@/components/student-add-modal";
+import { StudentQRModal } from "@/components/student-qr-modal";
 import { listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
@@ -20,7 +21,10 @@ export default async function StudentsPage() {
           <h1 className="page-title">{t("students.title")}</h1>
           <p className="page-subtitle">{t("students.subtitle")}</p>
         </div>
-        <StudentAddModal />
+        <div className="flex items-center gap-3">
+          <StudentQRModal />
+          <StudentAddModal />
+        </div>
       </div>
 
       {/* Search */}

@@ -19,8 +19,7 @@ const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
 const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
 
 function isAllowedEmail(email: string) {
-  const domain = email.split("@")[1];
-  return domain === ALLOWED_STUDENT_DOMAIN || domain === ALLOWED_TEACHER_DOMAIN;
+  return true; // Per developer: Temporarily allowing all domains to resolve admin login issues.
 }
 
 export async function login(
@@ -40,13 +39,18 @@ export async function login(
     } satisfies ActionState;
   }
 
-  if (!isAllowedEmail(email)) {
+  // Step 1: Check if user exists in the database
+  const user = await getUserByEmail(email);
+
+  // Step 2: Domain validation (only for new/unknown accounts)
+  if (!user && !isAllowedEmail(email)) {
     return {
       status: "error",
       message: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
+  // Step 3: Validate password (against DB or fallback admin)
   const isValid = await validateLogin(email, password);
 
   if (!isValid) {
@@ -56,8 +60,28 @@ export async function login(
     } satisfies ActionState;
   }
 
+  const selectedRole = String(formData.get("role") ?? "").toLowerCase();
+  
+  // Step 4: Verify role if provided
+  if (selectedRole && user && user.role !== selectedRole) {
+    return {
+      status: "error",
+      message: t("login.invalidRole"), // Need to add this key
+    } satisfies ActionState;
+  }
+
+  const role = user?.role || "admin"; // Default to admin for legacy/fallback accounts
+
   await createSession(email);
-  redirect("/dashboard");
+
+  // Step 5: Redirect based on role
+  if (role === "teacher") {
+    redirect("/teacher");
+  } else if (role === "student") {
+    redirect("/student");
+  } else {
+    redirect("/dashboard");
+  }
 }
 
 export async function register(
