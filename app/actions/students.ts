@@ -16,6 +16,9 @@ function parseStudentFields(formData: FormData) {
     className: string;
     faceDescriptors?: number[][] | null;
     photoUrl?: string | null;
+    dateOfBirth?: string | null;
+    parentName?: string | null;
+    parentPhone?: string | null;
   } = {
     studentCode: String(formData.get("studentCode") ?? "").trim(),
     fullName: String(formData.get("fullName") ?? "").trim(),

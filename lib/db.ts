@@ -533,6 +533,9 @@ export async function createStudent(input: {
   className?: string | null;
   faceDescriptors?: number[][] | null;
   photoUrl?: string | null;
+  dateOfBirth?: string | null;
+  parentName?: string | null;
+  parentPhone?: string | null;
 }) {
   const database = await ensureDatabaseReady();
   const now = isoNow();
@@ -549,6 +552,9 @@ export async function createStudent(input: {
     breakLatesCount: 0,
     createdAt: now,
     updatedAt: now,
+    dateOfBirth: sanitizeOptional(input.dateOfBirth),
+    parentName: sanitizeOptional(input.parentName),
+    parentPhone: sanitizeOptional(input.parentPhone),
   };
 
   await database.execute({
@@ -564,7 +570,10 @@ export async function createStudent(input: {
         excuses_count,
         break_lates_count,
         created_at,
-        updated_at
+        updated_at,
+        date_of_birth,
+        parent_name,
+        parent_phone
       ) VALUES (
         :id,
         :studentCode,
@@ -576,7 +585,10 @@ export async function createStudent(input: {
         :excusesCount,
         :breakLatesCount,
         :createdAt,
-        :updatedAt
+        :updatedAt,
+        :dateOfBirth,
+        :parentName,
+        :parentPhone
       )
     `,
     args: {
@@ -598,6 +610,9 @@ export async function updateStudent(
     className?: string | null;
     faceDescriptors?: number[][] | null;
     photoUrl?: string | null;
+    dateOfBirth?: string | null;
+    parentName?: string | null;
+    parentPhone?: string | null;
   },
 ) {
   const database = await ensureDatabaseReady();
@@ -614,6 +629,9 @@ export async function updateStudent(
     className: sanitizeOptional(input.className),
     faceDescriptors: input.faceDescriptors !== undefined ? input.faceDescriptors : current.faceDescriptors,
     photoUrl: input.photoUrl !== undefined ? input.photoUrl : current.photoUrl,
+    dateOfBirth: input.dateOfBirth !== undefined ? sanitizeOptional(input.dateOfBirth) : current.dateOfBirth,
+    parentName: input.parentName !== undefined ? sanitizeOptional(input.parentName) : current.parentName,
+    parentPhone: input.parentPhone !== undefined ? sanitizeOptional(input.parentPhone) : current.parentPhone,
     updatedAt: isoNow(),
   };
 
@@ -626,6 +644,9 @@ export async function updateStudent(
         class_name = :className,
         face_descriptors = :faceDescriptors,
         photo_url = :photoUrl,
+        date_of_birth = :dateOfBirth,
+        parent_name = :parentName,
+        parent_phone = :parentPhone,
         updated_at = :updatedAt
       WHERE id = :id
     `,
