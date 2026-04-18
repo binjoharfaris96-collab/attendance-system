@@ -72,7 +72,5 @@ export const config = {
     "/student/:path*",
     "/teacher/:path*",
     "/apps/:path*",
-    "/login",
-    "/signup"
   ],
 };
