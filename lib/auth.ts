@@ -241,47 +241,20 @@ export async function updateAdminCredentials(input: {
 }
 
 export async function createSession(email: string) {
-  // Query role from DB to embed into session
-  const user = await getUserByEmail(email);
-  const role = user?.role || "admin";
-
-  const payload = encodePayload({
-    email,
-    role,
-    exp: Date.now() + SESSION_DURATION_MS,
-  });
-  const signature = signPayload(payload).toString("base64url");
-
   const cookieStore = await cookies();
 
-  cookieStore.set(SESSION_COOKIE, `${payload}.${signature}`, {
+  cookieStore.set(SESSION_COOKIE, email, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: Math.floor(SESSION_DURATION_MS / 1000),
   });
 }
 
 export async function createSessionResponse(email: string, targetUrl: URL | string) {
-  const user = await getUserByEmail(email);
-  const role = user?.role || "admin";
-
-  const payload = encodePayload({
-    email,
-    role,
-    exp: Date.now() + SESSION_DURATION_MS,
-  });
-  const signature = signPayload(payload).toString("base64url");
-
   const response = NextResponse.redirect(targetUrl);
 
-  response.cookies.set(SESSION_COOKIE, `${payload}.${signature}`, {
+  response.cookies.set(SESSION_COOKIE, email, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: Math.floor(SESSION_DURATION_MS / 1000),
   });
 
   return response;

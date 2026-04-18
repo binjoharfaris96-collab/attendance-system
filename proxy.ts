@@ -7,28 +7,10 @@ export function proxy(request: NextRequest) {
   let hasSession = false;
   let role = "admin"; // Default fallback
 
-  if (sessionCookie) {
-    const [encodedPayload] = sessionCookie.split(".");
-    if (encodedPayload) {
-      try {
-        // Base64url decode manually for edge compatibility
-        const base64 = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split("")
-            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-            .join("")
-        );
-        const payload = JSON.parse(jsonPayload);
-        if (payload.role) {
-          role = payload.role;
-          hasSession = true;
-        }
-      } catch (e) {
-        // Decode failed — treat as no session
-      }
-    }
-  }
+  console.log("RAW COOKIE:", sessionCookie);
+  console.log("PARTS:", sessionCookie?.split("."));
+
+  const hasSession = !!sessionCookie;
 
   // 1. Unauthenticated users get kicked to login
   const isProtectedPath = 
