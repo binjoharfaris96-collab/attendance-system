@@ -13,7 +13,8 @@ import { getAppLanguage } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const summary = await getDashboardSummary();
+  try {
+    const summary = await getDashboardSummary();
   const recentAttendance = await listRecentAttendance(5);
   const students = await listStudents();
   const studentPhotoById = new Map(
@@ -397,4 +398,14 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
+  } catch (err: any) {
+    console.error("DASHBOARD CRASH:", err);
+    return (
+      <div className="p-8 rounded-xl bg-red-50 border border-red-200">
+        <h1 className="text-xl font-bold text-red-800 mb-2">Dashboard Error</h1>
+        <p className="text-red-700">The database query failed during dashboard instantiation. Please check the Vercel logs.</p>
+        <pre className="mt-4 text-xs text-red-600 bg-red-100 p-2 rounded">{err?.message || String(err)}</pre>
+      </div>
+    );
+  }
 }

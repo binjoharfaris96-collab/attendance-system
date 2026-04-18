@@ -76,6 +76,7 @@ export async function login(
   const role = isAdminEmail ? "admin" : (user?.role || "admin");
 
   await createSession(email);
+  console.log("LOGIN SUCCESS:", email, "assigned role:", role);
 
   // Step 5: Redirect based on role
   if (role === "teacher") {

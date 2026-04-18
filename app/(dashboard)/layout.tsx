@@ -43,6 +43,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }>) {
   const session = await requireSession();
+  console.log("DASHBOARD LOADED");
   const warningCount = await countUnknownFaces();
   const phoneCount = await countPhoneDetections();
   const lang = await getAppLanguage();

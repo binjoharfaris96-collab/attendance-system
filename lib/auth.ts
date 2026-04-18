@@ -249,6 +249,7 @@ export async function createSession(email: string) {
     sameSite: "lax",
     secure: true,
   });
+  console.log("COOKIE SET (Server Action):", email);
 }
 
 export async function createSessionResponse(email: string, targetUrl: URL | string) {
@@ -260,6 +261,7 @@ export async function createSessionResponse(email: string, targetUrl: URL | stri
     sameSite: "lax",
     secure: true,
   });
+  console.log("COOKIE SET (NextResponse):", email);
 
   return response;
 }
@@ -294,6 +296,7 @@ export const getSession = cache(async () => {
 
 export async function requireSession() {
   const session = await getSession();
+  console.log("SESSION CHECK (requireSession):", session ? session.email : "none");
 
   if (!session) {
     redirect("/login");
