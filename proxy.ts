@@ -2,8 +2,17 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  console.log("URL:", request.nextUrl.pathname);
-  console.log("COOKIE HEADER:", request.headers.get("cookie"));
+  const session = request.cookies.get("rollcall_session")?.value;
+
+  const isProtected =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/student") ||
+    request.nextUrl.pathname.startsWith("/teacher") ||
+    request.nextUrl.pathname.startsWith("/apps");
+
+  if (isProtected && !session) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   return NextResponse.next();
 }
