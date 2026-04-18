@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { createSession } from "@/lib/auth";
+import { createSession, createSessionResponse } from "@/lib/auth";
 import { createUser, getUserByEmail } from "@/lib/db";
 
 /**
@@ -130,10 +130,8 @@ export async function GET(request: NextRequest) {
       console.log(`[OAuth] Auto-provisioned new ${role}: ${email}`);
     }
 
-    // Success! Create session using the EXISTING session system — no changes needed
-    await createSession(user.email);
-
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    // Success! Return the response exactly with cookie attached on the Response object explicitly to fix the Next.js API route bug
+    return await createSessionResponse(user.email, new URL("/dashboard", request.url));
   } catch (err) {
     console.error("Google OAuth callback error:", err);
     return NextResponse.redirect(new URL("/login?error=server", request.url));
