@@ -250,6 +250,16 @@ export async function ensureDatabaseReady() {
     /* duplicate column or unsupported */
   }
   try {
+    await db.execute("ALTER TABLE attendance_events ADD COLUMN schedule_id TEXT");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
+    await db.execute("ALTER TABLE attendance_events ADD COLUMN notes TEXT");
+  } catch {
+    /* duplicate column or unsupported */
+  }
+  try {
     await db.execute("ALTER TABLE students ADD COLUMN excuses_count INTEGER DEFAULT 0");
   } catch {
     /* duplicate column or unsupported */
