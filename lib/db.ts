@@ -238,52 +238,6 @@ export async function ensureDatabaseReady() {
 
   await initializeDatabase(db);
 
-  // Add columns on existing DBs (must run after students table exists). Earlier runs failed silently when the table did not exist yet.
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN face_descriptors TEXT");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN lates_count INTEGER DEFAULT 0");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE attendance_events ADD COLUMN schedule_id TEXT");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE attendance_events ADD COLUMN notes TEXT");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN excuses_count INTEGER DEFAULT 0");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN break_lates_count INTEGER DEFAULT 0");
-  } catch {
-    /* duplicate column or unsupported */
-  }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN photo_url TEXT");
-  } catch { /* duplicate */ }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
-  } catch { /* duplicate */ }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN date_of_birth TEXT");
-  } catch { /* duplicate */ }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN parent_name TEXT");
-  } catch { /* duplicate */ }
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN parent_phone TEXT");
-  } catch { /* duplicate */ }
 
   await db.execute(`CREATE TABLE IF NOT EXISTS unknown_faces (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
   await db.execute(`CREATE TABLE IF NOT EXISTS phone_detections (id TEXT PRIMARY KEY, image_data TEXT NOT NULL, detected_at TEXT NOT NULL)`);
