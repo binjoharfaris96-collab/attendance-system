@@ -280,7 +280,7 @@ export const getSession = cache(async () => {
   console.log("SESSION COOKIE:", rawEmail);
   console.log("USER FOUND:", user ? user.email : "null");
 
-  if (!user && email !== process.env.ADMIN_EMAIL?.toLowerCase().trim()) {
+  if (!user && email !== (process.env.ADMIN_EMAIL || "").toLowerCase().trim()) {
     // If user is neither in DB nor the override admin, reject tracking
     return null;
   }
