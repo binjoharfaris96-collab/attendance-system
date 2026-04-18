@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireSession } from "@/lib/auth";
+import { } from "@/lib/auth";
 import { createMisbehaviorReport, getSetting } from "@/lib/db";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
@@ -20,7 +20,7 @@ const ISSUE_TYPES = new Set([
 ]);
 
 export async function submitMisbehaviorAction(formData: FormData) {
-  const session = await requireSession();
+  const session = await ();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

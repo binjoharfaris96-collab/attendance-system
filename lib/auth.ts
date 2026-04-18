@@ -271,10 +271,25 @@ export async function destroySession() {
 
 export const getSession = cache(async () => {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  const payload = verifyToken(token);
+  const rawEmail = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!rawEmail) return null;
 
-  return payload ? toSession(payload) : null;
+  const email = rawEmail.toLowerCase().trim();
+  const user = await getUserByEmail(email);
+
+  console.log("SESSION COOKIE:", rawEmail);
+  console.log("USER FOUND:", user ? user.email : "null");
+
+  if (!user && email !== process.env.ADMIN_EMAIL?.toLowerCase().trim()) {
+    // If user is neither in DB nor the override admin, reject tracking
+    return null;
+  }
+
+  return {
+    email,
+    role: user?.role || "admin",
+    expiresAt: Date.now() + 86400000,
+  };
 });
 
 export async function requireSession() {
