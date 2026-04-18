@@ -61,16 +61,19 @@ export async function login(
   }
 
   const selectedRole = String(formData.get("role") ?? "").toLowerCase();
+  const resolvedAdminEmail = await getResolvedAdminEmail();
+  const isAdminEmail = email === resolvedAdminEmail;
   
-  // Step 4: Verify role if provided
-  if (selectedRole && user && user.role !== selectedRole) {
+  // Step 4: Verify role if provided — skip for admin email accounts
+  if (selectedRole && user && user.role !== selectedRole && !isAdminEmail) {
     return {
       status: "error",
-      message: t("login.invalidRole"), // Need to add this key
+      message: t("login.invalidRole"),
     } satisfies ActionState;
   }
 
-  const role = user?.role || "admin"; // Default to admin for legacy/fallback accounts
+  // Admin email always gets admin role; DB users use their stored role
+  const role = isAdminEmail ? "admin" : (user?.role || "admin");
 
   await createSession(email);
 

@@ -24,11 +24,11 @@ type SessionPayload = {
 };
 
 function getEnvAdminEmail() {
-  return process.env.ADMIN_EMAIL?.trim().toLowerCase() || "admin@example.com";
+  return process.env.ADMIN_EMAIL?.trim().toLowerCase() || null;
 }
 
 function getEnvAdminPassword() {
-  return process.env.ADMIN_PASSWORD?.trim() || "ChangeMe123!";
+  return process.env.ADMIN_PASSWORD?.trim() || null;
 }
 
 function getSessionSecret() {
@@ -46,7 +46,7 @@ async function getStoredAdminPasswordHash() {
 }
 
 export async function getResolvedAdminEmail() {
-  return (await getStoredAdminEmail()) ?? getEnvAdminEmail();
+  return getEnvAdminEmail() ?? (await getStoredAdminEmail()) ?? "admin@example.com";
 }
 
 export async function hashPassword(password: string) {
@@ -72,12 +72,17 @@ export async function verifyHashedPassword(password: string, storedHash: string)
 }
 
 async function validateCurrentAdminPassword(password: string) {
+  const envPassword = getEnvAdminPassword();
+  if (envPassword) {
+    return password === envPassword;
+  }
+
   const storedHash = await getStoredAdminPasswordHash();
   if (storedHash) {
     return await verifyHashedPassword(password, storedHash);
   }
 
-  return password === getEnvAdminPassword();
+  return password === "ChangeMe123!";
 }
 
 function encodePayload(payload: SessionPayload) {

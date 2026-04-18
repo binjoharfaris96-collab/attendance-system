@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 
@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
  * Redirects the user to Google's OAuth 2.0 consent screen.
  * A CSRF state token is stored in a short-lived cookie for verification on callback.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
 
   if (!clientId) {
@@ -18,13 +18,13 @@ export async function GET() {
     );
   }
 
-  // Determine the callback URL based on environment
-  const baseUrl = process.env.NEXTAUTH_URL
-    ? process.env.NEXTAUTH_URL
-    : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
-  const redirectUri = `${baseUrl}/api/auth/callback/google`;
+  // Determine the callback URL — use request origin for localhost, NEXTAUTH_URL for production
+  const origin = request.nextUrl.origin;
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  const baseUrl = isLocalhost
+    ? origin
+    : (process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin);
+  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
 
   // Generate a CSRF state token and store it in a cookie
   const state = randomUUID();

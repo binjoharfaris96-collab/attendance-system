@@ -1,14 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get("rollcall_session")?.value;
   let hasSession = false;
   let role = "admin"; // Default fallback
 
   if (sessionCookie) {
-    hasSession = true;
     const [encodedPayload] = sessionCookie.split(".");
     if (encodedPayload) {
       try {
@@ -23,9 +22,10 @@ export function middleware(request: NextRequest) {
         const payload = JSON.parse(jsonPayload);
         if (payload.role) {
           role = payload.role;
+          hasSession = true;
         }
       } catch (e) {
-        // Ignore decode errors; real auth validation happens server-side
+        // Decode failed — treat as no session
       }
     }
   }

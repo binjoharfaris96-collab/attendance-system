@@ -34,11 +34,6 @@ export default async function RootLayout({
       dir={appLang === "ar" ? "rtl" : "ltr"}
       className={`h-full ${themeClass}`}
       suppressHydrationWarning
-    >
-      <body className="min-h-full bg-[var(--color-canvas)] text-[var(--color-ink)] antialiased transition-colors duration-200">
-        {children}
-        <SpeedInsights />
-      </body>
-    </html>
+    ><body className="min-h-full bg-[var(--color-canvas)] text-[var(--color-ink)] antialiased transition-colors duration-200" suppressHydrationWarning>{children}<SpeedInsights /></body></html>
   );
 }
