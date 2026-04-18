@@ -11,14 +11,9 @@ export function proxy(request: NextRequest) {
     const [encodedPayload] = sessionCookie.split(".");
     if (encodedPayload) {
       try {
-        // Base64url decode manually for edge compatibility
+        // Base64url decode
         const base64 = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split("")
-            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-            .join("")
-        );
+        const jsonPayload = Buffer.from(base64, "base64").toString("utf-8");
         const payload = JSON.parse(jsonPayload);
         if (payload.role) {
           role = payload.role;
