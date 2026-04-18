@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
   console.log("RAW COOKIE:", sessionCookie);
   console.log("PARTS:", sessionCookie?.split("."));
 
-  const hasSession = !!sessionCookie;
+  hasSession = !!sessionCookie;
 
   // 1. Unauthenticated users get kicked to login
   const isProtectedPath = 
