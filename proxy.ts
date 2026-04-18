@@ -2,47 +2,17 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get("rollcall_session")?.value;
-  let hasSession = false;
-  let role = "admin"; // Default fallback
+  console.log("COOKIE RAW:", sessionCookie);
 
-  console.log("RAW COOKIE:", sessionCookie);
-  console.log("PARTS:", sessionCookie?.split("."));
+  const isProtected =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/student") ||
+    request.nextUrl.pathname.startsWith("/teacher") ||
+    request.nextUrl.pathname.startsWith("/apps");
 
-  hasSession = !!sessionCookie;
-
-  // 1. Unauthenticated users get kicked to login
-  const isProtectedPath = 
-    pathname.startsWith("/dashboard") || 
-    pathname.startsWith("/student") || 
-    pathname.startsWith("/teacher") ||
-    pathname.startsWith("/apps");
-
-  if (isProtectedPath && !hasSession) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if ((pathname === "/login" || pathname === "/signup") && hasSession) {
-    // If logged in, send them to their role's home page
-    if (role === "student") return NextResponse.redirect(new URL("/student", request.url));
-    if (role === "teacher") return NextResponse.redirect(new URL("/teacher", request.url));
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // 2. Role-based enclosure (prevent crossing portals)
-  if (hasSession) {
-    if (role === "student" && !pathname.startsWith("/student")) {
-      return NextResponse.redirect(new URL("/student", request.url));
-    }
-    if (role === "teacher" && !pathname.startsWith("/teacher")) {
-      return NextResponse.redirect(new URL("/teacher", request.url));
-    }
-    if (role === "admin" && (pathname.startsWith("/student") || pathname.startsWith("/teacher"))) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+  if (isProtected && !sessionCookie) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
