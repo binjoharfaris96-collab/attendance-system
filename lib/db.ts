@@ -251,12 +251,6 @@ export async function ensureDatabaseReady() {
     FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
   )`);
   
-  // Phase 1 ManageBac Upgrades
-  try {
-    await db.execute("ALTER TABLE students ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL");
-  } catch {
-    /* duplicate column or unsupported */
-  }
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS teachers (
