@@ -246,6 +246,8 @@ export async function createSession(email: string) {
   cookieStore.set(SESSION_COOKIE, email, {
     httpOnly: true,
     path: "/",
+    sameSite: "lax",
+    secure: true,
   });
 }
 
@@ -255,6 +257,8 @@ export async function createSessionResponse(email: string, targetUrl: URL | stri
   response.cookies.set(SESSION_COOKIE, email, {
     httpOnly: true,
     path: "/",
+    sameSite: "lax",
+    secure: true,
   });
 
   return response;
