@@ -138,7 +138,14 @@ export default async function DashboardLayout({
           </Link>
 
           <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto pe-1">
-            {navigationItems.map((item) => (
+            {navigationItems
+              .filter((item) => {
+                if (session.role !== "admin") {
+                  if (item.href === "/recognition" || item.href === "/warnings" || item.href === "/device-logs") return false;
+                }
+                return true;
+              })
+              .map((item) => (
               <NavLink
                 key={item.href}
                 href={item.href}
@@ -165,7 +172,14 @@ export default async function DashboardLayout({
               </p>
             </div>
 
-            {secondaryNavigationItems.map((item) => (
+            {secondaryNavigationItems
+              .filter((item) => {
+                if (session.role !== "admin") {
+                  if (item.href === "/export" || item.href === "/settings") return false;
+                }
+                return true;
+              })
+              .map((item) => (
               <NavLink key={item.href} href={item.href} labelKey={item.labelKey} lang={lang} icon={item.icon} />
             ))}
           </nav>

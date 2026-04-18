@@ -5,6 +5,7 @@ import { formatDateTime } from "@/lib/time";
 import { listRecentMisbehaviorReports, listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+import { requireSession } from "@/lib/auth";
 
 function translateIssueTypeLabel(issueType: string, t: (key: string) => string) {
   const map: Record<string, string> = {
@@ -28,6 +29,7 @@ export default async function BehaviorPage() {
   const reports = await listRecentMisbehaviorReports(60);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
+  const session = await requireSession();
 
   return (
     <div className="space-y-6">
@@ -40,7 +42,7 @@ export default async function BehaviorPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
+      <div className={`grid gap-6 ${session.role === "admin" ? "lg:grid-cols-[420px_1fr]" : "max-w-2xl mx-auto"}`}>
         <div className="card h-fit">
           <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-4">
             {t("behavior.reportMisbehavior")}
@@ -48,7 +50,8 @@ export default async function BehaviorPage() {
           <MisbehaviorForm students={students} lang={lang} />
         </div>
 
-        <div className="card">
+        {session.role === "admin" && (
+          <div className="card">
           <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-4">
             {t("behavior.recentReports")}
           </h3>
@@ -93,6 +96,7 @@ export default async function BehaviorPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

@@ -6,11 +6,13 @@ import { deleteAnnouncementAction } from "@/app/actions/admin";
 import { AnnouncementForm } from "@/components/admin/announcement-form";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { formatDateTime } from "@/lib/time";
+import { requireSession } from "@/lib/auth";
 
 export default async function AnnouncementsPage() {
   const announcements = await listAllAnnouncements();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
+  const session = await requireSession();
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -25,9 +27,9 @@ export default async function AnnouncementsPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Create Form */}
-        <AnnouncementForm />
+      <div className={`grid gap-6 ${session.role === "admin" ? "md:grid-cols-3" : "max-w-4xl"}`}>
+        {/* Create Form (Admin Only) */}
+        {session.role === "admin" && <AnnouncementForm />}
 
         {/* List of Announcements */}
         <div className="md:col-span-2 space-y-4">
@@ -58,10 +60,12 @@ export default async function AnnouncementsPage() {
                       <p className="text-sm text-[var(--color-muted)] leading-relaxed">{ann.content}</p>
                     </div>
                     
-                    <DeleteButton 
-                      id={ann.id} 
-                      onDelete={deleteAnnouncementAction} 
-                    />
+                    {session.role === "admin" && (
+                      <DeleteButton 
+                        id={ann.id} 
+                        onDelete={deleteAnnouncementAction} 
+                      />
+                    )}
                   </div>
                 </div>
               ))}
