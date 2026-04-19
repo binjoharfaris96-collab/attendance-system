@@ -31,16 +31,16 @@ export default async function LinksDashboardPage() {
   const teachers = rawTeachers.map(t => ({
     id: t.id,
     fullName: t.fullName,
-    userId: t.userId,
-    userEmail: t.userEmail,
+    userId: t.userId ?? null,
+    userEmail: t.userEmail ?? null,
     type: "teacher" as const
   }));
 
   const students = rawStudents.map(s => ({
     id: s.id,
     fullName: s.fullName,
-    userId: s.userId,
-    userEmail: s.userEmail,
+    userId: s.userId ?? null,
+    userEmail: s.userEmail ?? null,
     type: "student" as const
   }));
 
