@@ -459,9 +459,12 @@ export async function listStudents() {
         s.created_at AS createdAt,
         s.updated_at AS updatedAt,
         COUNT(a.id) AS attendanceCount,
-        MAX(a.captured_at) AS lastAttendanceAt
+        MAX(a.captured_at) AS lastAttendanceAt,
+        s.user_id AS userId,
+        u.email AS userEmail
       FROM students s
       LEFT JOIN attendance_events a ON a.student_id = s.id
+      LEFT JOIN users u ON u.id = s.user_id
       GROUP BY s.id
       ORDER BY s.full_name COLLATE NOCASE ASC
     `);
@@ -1779,11 +1782,12 @@ export async function getStudentAssignments(studentId: string) {
         a.due_date AS dueDate, 
         c.name AS className,
         s.status,
-        s.score
+        g.score
       FROM class_students cs
       JOIN classes c ON c.id = cs.class_id
       JOIN assignments a ON a.class_id = c.id
       LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = :studentId
+      LEFT JOIN grades g ON g.submission_id = s.id
       WHERE cs.student_id = :studentId
       ORDER BY a.due_date ASC
     `,
@@ -2399,6 +2403,36 @@ export async function deleteSchedule(id: string) {
     sql: `DELETE FROM schedules WHERE id = :id`,
     args: { id }
   });
+}
+
+export async function saveWeeklySchedulesForClass(classId: string, schedules: Array<{ teacherId: string; subject: string; dayOfWeek: string; startTime: string; endTime: string }>) {
+  const database = await ensureDatabaseReady();
+  const now = isoNow();
+
+  // Wipe the existing timetable for this specific class
+  await database.execute({
+    sql: `DELETE FROM schedules WHERE class_id = :classId`,
+    args: { classId }
+  });
+
+  // Bulk insert new grids
+  for (const slot of schedules) {
+    if (!slot.teacherId || !slot.subject) continue;
+    await database.execute({
+      sql: `INSERT INTO schedules (id, class_id, teacher_id, subject, day_of_week, start_time, end_time, created_at)
+            VALUES (:id, :classId, :teacherId, :subject, :dayOfWeek, :startTime, :endTime, :createdAt)`,
+      args: {
+        id: randomUUID(),
+        classId,
+        teacherId: slot.teacherId,
+        subject: slot.subject,
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        createdAt: now
+      }
+    });
+  }
 }
 
 export async function getScheduleWithAttendance(scheduleId: string, date: string) {

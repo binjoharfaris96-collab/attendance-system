@@ -15,12 +15,6 @@ import { getAppLanguage } from "@/lib/i18n-server";
 import { idleActionState } from "@/lib/types";
 import type { ActionState } from "@/lib/types";
 
-const ALLOWED_STUDENT_DOMAIN = "stu.kfs.sch.sa";
-const ALLOWED_TEACHER_DOMAIN = "kfs.sch.sa";
-
-function isAllowedEmail(email: string) {
-  return true; // Per developer: Temporarily allowing all domains to resolve admin login issues.
-}
 
 export async function login(
   previousState: ActionState = idleActionState,
@@ -41,14 +35,6 @@ export async function login(
 
   // Step 1: Check if user exists in the database
   const user = await getUserByEmail(email);
-
-  // Step 2: Domain validation (only for new/unknown accounts)
-  if (!user && !isAllowedEmail(email)) {
-    return {
-      status: "error",
-      message: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.`,
-    } satisfies ActionState;
-  }
 
   // Step 3: Validate password (against DB or fallback admin)
   const isValid = await validateLogin(email, password);
@@ -99,18 +85,12 @@ export async function register(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const selectedRole = String(formData.get("role") ?? "student").toLowerCase();
 
   if (!fullName || !email || !password) {
     return {
       status: "error",
       message: t("login.missingCredentials"),
-    } satisfies ActionState;
-  }
-
-  if (!isAllowedEmail(email)) {
-    return {
-      status: "error",
-      message: `Access denied. Only @${ALLOWED_STUDENT_DOMAIN} and @${ALLOWED_TEACHER_DOMAIN} emails are allowed.`,
     } satisfies ActionState;
   }
 
@@ -139,7 +119,7 @@ export async function register(
   }
 
   try {
-    const role = email.endsWith(`@${ALLOWED_STUDENT_DOMAIN}`) ? "student" : "teacher";
+    const role = selectedRole === "teacher" ? "teacher" : "student";
 
     const passwordHash = await hashPassword(password);
     await createUser({

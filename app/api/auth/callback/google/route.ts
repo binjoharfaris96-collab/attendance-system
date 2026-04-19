@@ -103,19 +103,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/login?error=no_email", request.url));
     }
 
-    // Domain validation (Temporarily allowing all for admin recovery)
-    const emailDomain = email.split("@")[1];
     let role = "student";
 
     if (email === "binjoharf@gmail.com" || email === "binjowarf@gmail.com" || email === "binjoharfaris96@gmail.com") {
       role = "admin";
-    } else if (emailDomain === "stu.kfs.sch.sa") {
-      role = "student";
-    } else if (emailDomain === "kfs.sch.sa") {
-      role = "teacher";
-    } else {
-      // Allow other domains for now to investigate admin issues, but default to student
-      role = "student";
     }
 
     let user = await getUserByEmail(email);
@@ -130,8 +121,12 @@ export async function GET(request: NextRequest) {
       console.log(`[OAuth] Auto-provisioned new ${role}: ${email}`);
     }
 
-    // Success! Return the response exactly with cookie attached on the Response object explicitly to fix the Next.js API route bug
-    return await createSessionResponse(user.email, new URL("/dashboard", request.url));
+    // Success! Determine correct redirect path based on their assigned role
+    let redirectPath = "/dashboard";
+    if (user.role === "teacher") redirectPath = "/teacher";
+    if (user.role === "student") redirectPath = "/student";
+
+    return await createSessionResponse(user.email, new URL(redirectPath, request.url));
   } catch (err) {
     console.error("Google OAuth callback error:", err);
     return NextResponse.redirect(new URL("/login?error=server", request.url));

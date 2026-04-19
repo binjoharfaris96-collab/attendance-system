@@ -14,7 +14,8 @@ import {
   unenrollStudentFromClass,
   updateClassTeacher,
   createSchedule,
-  deleteSchedule
+  deleteSchedule,
+  saveWeeklySchedulesForClass
 } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
@@ -219,6 +220,25 @@ export async function createScheduleAction(formData: FormData) {
     return { success: true };
   } catch (err: any) {
     return { error: err.message || "Failed to create schedule" };
+  }
+}
+
+export async function saveWeeklyScheduleAction(payload: { classId: string, schedules: Array<{ teacherId: string; subject: string; dayOfWeek: string; startTime: string; endTime: string }> }) {
+  const session = await requireSession();
+  if (session.role !== "admin") return { error: "Access denied" };
+
+  if (!payload.classId || !payload.schedules) {
+    return { error: "Class ID and Schedule Data are required" };
+  }
+
+  try {
+    await saveWeeklySchedulesForClass(payload.classId, payload.schedules);
+    revalidatePath("/dashboard/schedules");
+    revalidatePath("/teacher"); 
+    revalidatePath("/student");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Failed to save the weekly schedule grid." };
   }
 }
 

@@ -8,9 +8,15 @@ import { SubmitButton } from "@/components/submit-button";
 import { t, type AppLanguage } from "@/lib/i18n";
 import { idleActionState } from "@/lib/types";
 
+const ROLES = [
+  { id: "teacher", label: "Teacher", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>` },
+  { id: "student", label: "Student", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>` },
+];
+
 export function RegisterForm() {
   const [state, action] = useActionState(register, idleActionState);
   const [activeLang, setActiveLang] = useState<AppLanguage>("en");
+  const [selectedRole, setSelectedRole] = useState("teacher");
 
   useEffect(() => {
     const updateLangFromHtml = () => {
@@ -30,7 +36,28 @@ export function RegisterForm() {
   }, []);
 
   return (
-    <form action={action} className="space-y-4">
+    <div className="space-y-6">
+      {/* Role Selector */}
+      <div className="flex p-1 bg-[var(--surface-2)] border border-[var(--color-line)] rounded-2xl">
+        {ROLES.map((role) => (
+          <button
+            key={role.id}
+            type="button"
+            onClick={() => setSelectedRole(role.id)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-xl transition-all ${
+              selectedRole === role.id 
+                ? "bg-[var(--surface-1)] text-[var(--color-accent)] shadow-sm border border-[var(--color-line)]" 
+                : "text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+            }`}
+          >
+            <div dangerouslySetInnerHTML={{ __html: role.icon }} className={selectedRole === role.id ? "text-[var(--color-accent)]" : "text-[var(--color-muted)]"} />
+            {role.label}
+          </button>
+        ))}
+      </div>
+
+      <form action={action} className="space-y-4">
+        <input type="hidden" name="role" value={selectedRole} />
       <div className="space-y-1.5">
         <label className="field-label" htmlFor="fullName">
           {activeLang === "ar" ? "الاسم الكامل" : "Full Name"}
@@ -100,5 +127,6 @@ export function RegisterForm() {
         </Link>
       </div>
     </form>
+    </div>
   );
 }

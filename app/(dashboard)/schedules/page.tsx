@@ -2,7 +2,7 @@ import { listAllSchedules, listAllClasses, listTeachers } from "@/lib/db";
 import { getAppLanguage } from "@/lib/i18n-server";
 import { createTranslator } from "@/lib/i18n";
 import { Calendar, Clock, Trash2, Plus, User, BookOpen } from "lucide-react";
-import { ScheduleForm } from "@/components/admin/schedule-form";
+import { WeeklyGridBuilder } from "@/components/admin/weekly-grid-builder";
 import { deleteScheduleAction } from "@/app/actions/admin";
 import { DeleteButton } from "@/components/admin/delete-button";
 
@@ -28,27 +28,21 @@ export default async function SchedulesPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="space-y-12">
         {/* Creation Form */}
         <div className="space-y-6">
-          <div className="card border-l-4 border-l-[var(--color-accent)]">
-            <h3 className="font-bold flex items-center gap-2 mb-4">
-              <Plus className="w-4 h-4 text-[var(--color-accent)]" />
-              Add Schedule Slot
-            </h3>
-            <ScheduleForm 
-              classes={classes.map(c => ({ id: c.id, name: c.name }))} 
-              teachers={teachers.map(t => ({ id: t.id, fullName: t.fullName }))} 
-            />
-          </div>
+          <WeeklyGridBuilder 
+            classes={classes.map(c => ({ id: c.id, name: c.name }))} 
+            teachers={teachers.map(t => ({ id: t.id, fullName: t.fullName }))} 
+          />
         </div>
 
         {/* Schedule List */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-6 border-t border-[var(--color-line)] pt-8">
           <div className="flex items-center justify-between px-1">
-            <h3 className="font-bold flex items-center gap-2 text-[var(--color-ink)]">
-              <Calendar className="w-4 h-4 text-[var(--color-accent)]" />
-              Active Slots
+            <h3 className="font-bold flex items-center gap-2 text-[var(--color-ink)] text-xl">
+              <Calendar className="w-5 h-5 text-[var(--color-accent)]" />
+              Active System Timetable
             </h3>
           </div>
 
@@ -107,7 +101,7 @@ export default async function SchedulesPage() {
 
             {schedules.length === 0 && (
               <div className="card text-center p-12 text-[var(--color-muted)] italic">
-                No schedule slots defined yet. Use the form to plan your school day.
+                No schedule slots defined yet. Use the Weekly Grid Builder above to generate a timetable.
               </div>
             )}
           </div>

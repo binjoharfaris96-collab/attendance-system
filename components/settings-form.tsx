@@ -87,6 +87,7 @@ export function SettingsForm({
   initialUnknownFaceAlerts,
   initialPhoneDetectionAlerts,
   initialBackupInterval,
+  isAdmin = true,
 }: {
   initialLateCutoff: string;
   initialCheckInOpen: string;
@@ -96,6 +97,7 @@ export function SettingsForm({
   initialUnknownFaceAlerts: string;
   initialPhoneDetectionAlerts: string;
   initialBackupInterval: string;
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [timeLate, setTimeLate] = useState(minutesToTimeStr(initialLateCutoff));
@@ -263,44 +265,46 @@ export function SettingsForm({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="form-section space-y-3">
-          <p className="text-sm font-semibold text-[var(--color-ink)]">{t("settings.attendanceWindow", uiLang)}</p>
-          <div className="grid gap-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
-                {t("settings.checkInOpen", uiLang)}
-              </label>
-              <input
-                type="time"
-                value={timeOpen}
-                onChange={(e) => setTimeOpen(e.target.value)}
-                className="field-input h-11 min-w-[170px] text-sm"
-              />
+        {isAdmin && (
+          <section className="form-section space-y-3">
+            <p className="text-sm font-semibold text-[var(--color-ink)]">{t("settings.attendanceWindow", uiLang)}</p>
+            <div className="grid gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
+                  {t("settings.checkInOpen", uiLang)}
+                </label>
+                <input
+                  type="time"
+                  value={timeOpen}
+                  onChange={(e) => setTimeOpen(e.target.value)}
+                  className="field-input h-11 min-w-[170px] text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
+                  {t("settings.lateCutoff", uiLang)}
+                </label>
+                <input
+                  type="time"
+                  value={timeLate}
+                  onChange={(e) => setTimeLate(e.target.value)}
+                  className="field-input h-11 min-w-[170px] text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
+                  {t("settings.checkInClose", uiLang)}
+                </label>
+                <input
+                  type="time"
+                  value={timeClose}
+                  onChange={(e) => setTimeClose(e.target.value)}
+                  className="field-input h-11 min-w-[170px] text-sm"
+                />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
-                {t("settings.lateCutoff", uiLang)}
-              </label>
-              <input
-                type="time"
-                value={timeLate}
-                onChange={(e) => setTimeLate(e.target.value)}
-                className="field-input h-11 min-w-[170px] text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
-                {t("settings.checkInClose", uiLang)}
-              </label>
-              <input
-                type="time"
-                value={timeClose}
-                onChange={(e) => setTimeClose(e.target.value)}
-                className="field-input h-11 min-w-[170px] text-sm"
-              />
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="form-section space-y-3">
           <div>
@@ -363,43 +367,47 @@ export function SettingsForm({
             <option value="ar">{t("settings.languageArabic", uiLang)}</option>
           </select>
 
-          <div className="pt-2">
-            <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
-              {t("settings.backupInterval", uiLang)}
-            </label>
-            <select
-              value={backupInterval}
-              onChange={(event) => setBackupInterval(normalizeBackupInterval(event.target.value))}
-              className="field-input"
-            >
-              <option value="off">{t("settings.backupOff", uiLang)}</option>
-              <option value="daily">{t("settings.backupDaily", uiLang)}</option>
-              <option value="weekly">{t("settings.backupWeekly", uiLang)}</option>
-            </select>
-          </div>
+          {isAdmin && (
+            <div className="pt-2">
+              <label className="mb-1 block text-xs font-medium text-[var(--color-muted)]">
+                {t("settings.backupInterval", uiLang)}
+              </label>
+              <select
+                value={backupInterval}
+                onChange={(event) => setBackupInterval(normalizeBackupInterval(event.target.value))}
+                className="field-input"
+              >
+                <option value="off">{t("settings.backupOff", uiLang)}</option>
+                <option value="daily">{t("settings.backupDaily", uiLang)}</option>
+                <option value="weekly">{t("settings.backupWeekly", uiLang)}</option>
+              </select>
+            </div>
+          )}
         </section>
 
-        <section className="form-section space-y-3">
-          <p className="text-sm font-semibold text-[var(--color-ink)]">{t("settings.alertControls", uiLang)}</p>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
-            <input
-              type="checkbox"
-              checked={unknownFaceAlertsEnabled}
-              onChange={(event) => setUnknownFaceAlertsEnabled(event.target.checked)}
-              className="h-4 w-4 accent-[var(--color-accent)]"
-            />
-            {t("settings.unknownFaceAlerts", uiLang)}
-          </label>
-          <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
-            <input
-              type="checkbox"
-              checked={phoneDetectionAlertsEnabled}
-              onChange={(event) => setPhoneDetectionAlertsEnabled(event.target.checked)}
-              className="h-4 w-4 accent-[var(--color-accent)]"
-            />
-            {t("settings.phoneDetectionAlerts", uiLang)}
-          </label>
-        </section>
+        {isAdmin && (
+          <section className="form-section space-y-3">
+            <p className="text-sm font-semibold text-[var(--color-ink)]">{t("settings.alertControls", uiLang)}</p>
+            <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
+              <input
+                type="checkbox"
+                checked={unknownFaceAlertsEnabled}
+                onChange={(event) => setUnknownFaceAlertsEnabled(event.target.checked)}
+                className="h-4 w-4 accent-[var(--color-accent)]"
+              />
+              {t("settings.unknownFaceAlerts", uiLang)}
+            </label>
+            <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
+              <input
+                type="checkbox"
+                checked={phoneDetectionAlertsEnabled}
+                onChange={(event) => setPhoneDetectionAlertsEnabled(event.target.checked)}
+                className="h-4 w-4 accent-[var(--color-accent)]"
+              />
+              {t("settings.phoneDetectionAlerts", uiLang)}
+            </label>
+          </section>
+        )}
       </div>
     </div>
   );

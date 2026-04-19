@@ -5,8 +5,17 @@ import { AccountSettingsForm } from "@/components/account-settings-form";
 import { getAuthDefaults } from "@/lib/auth";
 import { createTranslator, type AppLanguage } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+import { requireSession } from "@/lib/auth";
 
 export default async function SettingsPage() {
+  const session = await requireSession();
+  if (session.role === "student") {
+    return (
+      <div className="p-8 text-center text-red-600 font-bold border rounded-lg bg-red-50 mt-10 max-w-2xl mx-auto">
+        Access Denied. Global Configuration parameters require level 4 administrative clearance.
+      </div>
+    );
+  }
   const lateCutoffMinutes = await getSetting("late_cutoff_minutes", "470");
   const checkInOpenMinutes = await getSetting("check_in_open_minutes", "0");
   const checkInCloseMinutes = await getSetting("check_in_close_minutes", "1439");
@@ -38,6 +47,7 @@ export default async function SettingsPage() {
             initialUnknownFaceAlerts={unknownFaceAlerts}
             initialPhoneDetectionAlerts={phoneDetectionAlerts}
             initialBackupInterval={backupInterval}
+            isAdmin={session.role === "admin"}
           />
         </div>
 
@@ -54,9 +64,11 @@ export default async function SettingsPage() {
             <AccountSettingsForm initialUsername={authDefaults.email} lang={appLanguage as AppLanguage} />
           </div>
 
-          <div className="card">
-            <BackupRestorePanel lang={appLanguage as AppLanguage} />
-          </div>
+          {session.role === "admin" && (
+            <div className="card">
+              <BackupRestorePanel lang={appLanguage as AppLanguage} />
+            </div>
+          )}
         </div>
       </div>
     </div>
