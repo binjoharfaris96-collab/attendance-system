@@ -8,7 +8,6 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopWeatherCard } from "@/components/top-weather-card";
 import { requireSession } from "@/lib/auth";
-import { countPhoneDetections, countUnknownFaces } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
 
@@ -16,8 +15,6 @@ export const dynamic = "force-dynamic";
 
 export default async function TeacherLayout({ children }: { children: ReactNode }) {
   const session = await requireSession();
-  const warningCount = await countUnknownFaces();
-  const phoneCount = await countPhoneDetections();
   const lang = await getAppLanguage();
   const initialTheme = await getThemePreference();
   const t = createTranslator(lang);
@@ -93,7 +90,6 @@ export default async function TeacherLayout({ children }: { children: ReactNode 
                 labelKey={item.labelKey} 
                 lang={lang} 
                 icon={item.icon}
-                badge={item.href === "/warnings" ? warningCount : undefined}
               />
             ))}
           </nav>
