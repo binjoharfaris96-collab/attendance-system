@@ -16,6 +16,11 @@ import { createUser, getUserByEmail } from "@/lib/db";
  * 6. Redirects to dashboard
  */
 export async function GET(request: NextRequest) {
+  // Security: Block OAuth on Vercel preview domains
+  if (process.env.VERCEL_ENV === "preview") {
+    return new Response("Google OAuth is disabled on Vercel preview branches.", { status: 403 });
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");

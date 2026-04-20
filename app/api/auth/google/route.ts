@@ -9,6 +9,11 @@ import { cookies } from "next/headers";
  * A CSRF state token is stored in a short-lived cookie for verification on callback.
  */
 export async function GET(request: NextRequest) {
+  // Security: Block OAuth on Vercel preview domains to prevent redirect_uri issues
+  if (process.env.VERCEL_ENV === "preview") {
+    return new Response("Google OAuth is disabled on Vercel preview branches for security. Please use the production domain or localhost.", { status: 403 });
+  }
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
 
   if (!clientId) {

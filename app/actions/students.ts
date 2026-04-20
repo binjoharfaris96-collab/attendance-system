@@ -65,11 +65,14 @@ function validateStudentFields(input: {
 }
 
 function getDatabaseErrorMessage(error: unknown, t: (key: string) => string) {
-  if (
-    error instanceof Error &&
-    error.message.includes("UNIQUE constraint failed: students.student_code")
-  ) {
-    return t("student.studentIdExists");
+  console.error("Database Error Details:", error);
+  
+  if (error instanceof Error) {
+    if (error.message.includes("UNIQUE constraint failed: students.student_code")) {
+      return t("student.studentIdExists");
+    }
+    // Return the actual error message in development/debug mode
+    return `${t("student.studentSaveFailed")} (${error.message})`;
   }
 
   return t("student.studentSaveFailed");

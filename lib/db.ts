@@ -356,6 +356,15 @@ export async function ensureDatabaseReady() {
   try { await db.execute(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE buildings ADD COLUMN grades TEXT`); } catch (e) {}
   
+  // Student table expansion (migration for existing databases)
+  try { await db.execute(`ALTER TABLE students ADD COLUMN date_of_birth TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN parent_name TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN parent_phone TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN user_id TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN lates_count INTEGER DEFAULT 0`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN excuses_count INTEGER DEFAULT 0`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE students ADD COLUMN break_lates_count INTEGER DEFAULT 0`); } catch (e) {}
+  
   await db.execute(`
     CREATE TABLE IF NOT EXISTS parent_student_requests (
       id TEXT PRIMARY KEY,
