@@ -51,7 +51,9 @@ export async function GET(request: NextRequest) {
 
   // Use the current origin for the redirect URI (must match the authorization step exactly)
   const origin = request.nextUrl.origin;
-  const redirectUri = `${origin.replace(/\/$/, "")}/api/auth/callback/google`;
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  const baseUrl = isLocalhost ? origin : origin.replace("http://", "https://");
+  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
 
   try {
     // Exchange authorization code for access token

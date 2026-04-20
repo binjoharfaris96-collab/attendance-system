@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
   // Use the current origin for the redirect URI. 
   // This ensures that the state cookie (CSRF) is always available on the same domain.
   const origin = request.nextUrl.origin;
-  const redirectUri = `${origin.replace(/\/$/, "")}/api/auth/callback/google`;
+  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+  
+  // Force HTTPS on Vercel/Production to prevent redirect_uri_mismatch
+  const baseUrl = isLocalhost ? origin : origin.replace("http://", "https://");
+  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
 
   // Generate a CSRF state token and store it in a cookie
   const state = randomUUID();
