@@ -24,9 +24,12 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
   const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
   
-  // Force HTTPS on Vercel/Production to prevent redirect_uri_mismatch
-  const baseUrl = isLocalhost ? origin : origin.replace("http://", "https://");
-  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
+  // Standardize the redirect URI to what Google Console expects
+  // If we are on localhost, force the standard localhost:3000 URI
+  const baseUrl = isLocalhost ? "http://localhost:3000" : origin.replace("http://", "https://");
+  const redirectUri = `${baseUrl}/api/auth/callback/google`;
+
+  console.log(`\n[GOOGLE AUTH] INITIAL REDIRECT URI: ${redirectUri}\n`);
 
   // Generate a CSRF state token and store it in a cookie
   const state = randomUUID();

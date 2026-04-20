@@ -59,6 +59,8 @@ export function RegisterForm() {
 
       <form action={action} className="space-y-4">
         <input type="hidden" name="role" value={selectedRole} />
+
+
       <div className="space-y-1.5">
         <label className="field-label" htmlFor="fullName">
           {activeLang === "ar" ? "الاسم الكامل" : "Full Name"}

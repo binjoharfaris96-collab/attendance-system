@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
   // Use the current origin for the redirect URI (must match the authorization step exactly)
   const origin = request.nextUrl.origin;
   const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-  const baseUrl = isLocalhost ? origin : origin.replace("http://", "https://");
-  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
+  const baseUrl = isLocalhost ? "http://localhost:3000" : origin.replace("http://", "https://");
+  const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   try {
     // Exchange authorization code for access token
@@ -71,12 +71,14 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorBody = await tokenResponse.text();
-      console.error("Google token exchange failed:", {
+      console.error("\n[GOOGLE AUTH] TOKEN EXCHANGE FAILED:", {
         status: tokenResponse.status,
         body: errorBody,
-        sentRedirectUri: redirectUri
+        redirectUriSent: redirectUri,
+        clientIdFound: !!clientId,
+        clientSecretFound: !!clientSecret
       });
-      return NextResponse.redirect(new URL("/login?error=token", request.url));
+      return NextResponse.redirect(new URL(`/login?error=token&status=${tokenResponse.status}`, request.url));
     }
 
     const tokenData = (await tokenResponse.json()) as {
