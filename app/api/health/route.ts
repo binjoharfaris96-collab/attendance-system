@@ -18,13 +18,22 @@ function safeHostFromUrl(value: string) {
   }
 }
 
+function redactHost(host: string | null) {
+  if (!host) return null;
+  const lowered = host.toLowerCase();
+  if (lowered.endsWith("turso.io")) return "turso.io";
+  const parts = lowered.split(".").filter(Boolean);
+  if (parts.length <= 2) return parts.join(".");
+  return parts.slice(-2).join(".");
+}
+
 export async function GET() {
   const startedAt = Date.now();
   const isVercel = process.env.VERCEL === "1";
 
   const rawDbUrl = process.env.DATABASE_URL?.trim() || "";
   const dbUrlScheme = rawDbUrl ? getUrlScheme(rawDbUrl) : null;
-  const dbUrlHost = rawDbUrl ? safeHostFromUrl(rawDbUrl) : null;
+  const dbUrlHost = rawDbUrl ? redactHost(safeHostFromUrl(rawDbUrl)) : null;
 
   let dbOk = false;
   let dbError: string | null = null;
