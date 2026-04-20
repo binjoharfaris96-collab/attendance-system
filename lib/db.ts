@@ -44,24 +44,34 @@ export function getDatabase() {
 
 function getDatabaseConfig() {
   const isVercel = process.env.VERCEL === "1";
-  const url = process.env.DATABASE_URL?.trim();
+  const rawUrl = process.env.DATABASE_URL?.trim();
   const authToken = process.env.DATABASE_AUTH_TOKEN?.trim();
 
-  if (url) {
+  if (rawUrl) {
+    const url = (() => {
+      // Common footgun: users paste `your-db.turso.io` without `libsql://`.
+      if (!/^[a-z]+:/i.test(rawUrl) && /[.]/.test(rawUrl)) {
+        return `libsql://${rawUrl}`;
+      }
+      return rawUrl;
+    })();
+
     if (!/^(libsql:|https?:|wss?:|file:)/i.test(url)) {
       throw new Error(
-        "DATABASE_URL must start with libsql:, https://, wss://, or file: (Turso/libSQL). " +
-          "A bare hostname will not connect and signups will not persist.",
+        "DATABASE_URL must start with libsql:, https://, wss://, or file: (Turso/libSQL).",
       );
     }
+
     return { url, authToken: authToken || undefined };
   }
 
   if (isVercel) {
-    throw new Error(
-      "DATABASE_URL is required on Vercel. Without a Turso (or other libSQL) URL, each " +
-        "server instance uses a temporary database and new accounts are not saved.",
+    const tmpUrl = "file:/tmp/attendance.sqlite";
+    console.warn(
+      "[db] DATABASE_URL is not set on Vercel. Falling back to a temporary SQLite database at /tmp. " +
+        "Data may not persist across deployments/regions. Set DATABASE_URL for persistence.",
     );
+    return { url: tmpUrl };
   }
 
   const dataDirectory = join(process.cwd(), "data");

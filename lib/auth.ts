@@ -38,13 +38,22 @@ function getSessionSecret() {
 }
 
 async function getStoredAdminEmail() {
-  const value = (await getSetting(AUTH_EMAIL_KEY, "")).trim().toLowerCase();
-  return value || null;
+  try {
+    const value = (await getSetting(AUTH_EMAIL_KEY, "")).trim().toLowerCase();
+    return value || null;
+  } catch {
+    // If DB isn't configured/reachable (common on fresh deploys), don't crash login.
+    return null;
+  }
 }
 
 async function getStoredAdminPasswordHash() {
-  const value = (await getSetting(AUTH_PASSWORD_HASH_KEY, "")).trim();
-  return value || null;
+  try {
+    const value = (await getSetting(AUTH_PASSWORD_HASH_KEY, "")).trim();
+    return value || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getResolvedAdminEmail() {
@@ -162,9 +171,13 @@ export async function validateLogin(email: string, password: string) {
   const normalizedEmail = email.trim().toLowerCase();
   
   // 1. Check users table
-  const user = await getUserByEmail(normalizedEmail);
-  if (user) {
-    return await verifyHashedPassword(password, user.passwordHash);
+  try {
+    const user = await getUserByEmail(normalizedEmail);
+    if (user) {
+      return await verifyHashedPassword(password, user.passwordHash);
+    }
+  } catch {
+    // Fall back to legacy admin check if DB isn't available.
   }
 
   // 2. Fallback to legacy admin check
@@ -224,11 +237,25 @@ export async function updateAdminCredentials(input: {
   }
 
   if (shouldUpdateEmail) {
-    await updateSetting(AUTH_EMAIL_KEY, nextEmail);
+    try {
+      await updateSetting(AUTH_EMAIL_KEY, nextEmail);
+    } catch {
+      return {
+        success: false,
+        message: "Database is not configured. Set DATABASE_URL on the server and try again.",
+      };
+    }
   }
 
   if (shouldUpdatePassword) {
-    await updateSetting(AUTH_PASSWORD_HASH_KEY, await hashPassword(nextPassword));
+    try {
+      await updateSetting(AUTH_PASSWORD_HASH_KEY, await hashPassword(nextPassword));
+    } catch {
+      return {
+        success: false,
+        message: "Database is not configured. Set DATABASE_URL on the server and try again.",
+      };
+    }
   }
 
   return {
@@ -279,7 +306,13 @@ export const getSession = cache(async () => {
   if (!rawEmail) return null;
 
   const email = rawEmail.toLowerCase().trim();
-  const user = await getUserByEmail(email);
+  const user = await (async () => {
+    try {
+      return await getUserByEmail(email);
+    } catch {
+      return null;
+    }
+  })();
 
   console.log("SESSION COOKIE:", rawEmail);
   console.log("USER FOUND:", user ? user.email : "null");
