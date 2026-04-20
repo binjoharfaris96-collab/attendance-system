@@ -591,7 +591,7 @@ export async function listStudents(buildingId?: string | null) {
   const database = await ensureDatabaseReady();
   let sql = `
     SELECT
-      s.*, student_code AS studentCode, full_name AS fullName, class_name AS className, 
+      s.*, s.student_code AS studentCode, s.full_name AS fullName, s.class_name AS className, 
       u.email AS userEmail,
       (SELECT COUNT(*) FROM attendance_events ae WHERE ae.student_id = s.id) AS attendanceCount,
       (SELECT MAX(captured_at) FROM attendance_events ae WHERE ae.student_id = s.id) AS lastAttendanceAt
