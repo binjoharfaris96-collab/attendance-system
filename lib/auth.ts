@@ -21,6 +21,7 @@ const AUTH_PASSWORD_HASH_KEY = "admin_password_hash";
 type SessionPayload = {
   email: string;
   role: string;
+  buildingId: string | null;
   exp: number;
 };
 
@@ -140,6 +141,7 @@ function toSession(payload: SessionPayload): Session {
   return {
     email: payload.email,
     role: payload.role,
+    buildingId: payload.buildingId,
     expiresAt: payload.exp,
   };
 }
@@ -282,14 +284,15 @@ export const getSession = cache(async () => {
   console.log("SESSION COOKIE:", rawEmail);
   console.log("USER FOUND:", user ? user.email : "null");
 
-  if (!user && email !== (process.env.ADMIN_EMAIL || "").toLowerCase().trim()) {
-    // If user is neither in DB nor the override admin, reject tracking
-    return null;
-  }
+  const resolvedAdminEmail = await getResolvedAdminEmail();
+  const isAdminEmail = email === resolvedAdminEmail;
+  const role = isAdminEmail ? "owner" : (user?.role || "admin");
+  const buildingId = user?.buildingId || null;
 
   return {
     email,
-    role: user?.role || "admin",
+    role,
+    buildingId,
     expiresAt: Date.now() + 86400000,
   };
 });

@@ -1,14 +1,16 @@
+import { requireSession } from "@/lib/auth";
 import { listStudents, listExcuses } from "@/lib/db";
+import { getAppLanguage } from "@/lib/i18n-server";
+import { createTranslator } from "@/lib/i18n";
 import { ExcuseForm } from "@/components/excuse-form";
-import { formatDateTime } from "@/lib/time";
 import { deleteExcuseAction } from "@/app/actions/excuse";
 import { revalidatePath } from "next/cache";
-import { createTranslator } from "@/lib/i18n";
-import { getAppLanguage } from "@/lib/i18n-server";
+import { formatDateTime } from "@/lib/time";
 
 export default async function ExcusesPage() {
-  const students = await listStudents();
-  const excuses = await listExcuses(50);
+  const session = await requireSession();
+  const students = await listStudents(session.buildingId);
+  const excuses = await listExcuses(50, session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

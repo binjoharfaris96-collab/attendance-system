@@ -3,10 +3,12 @@ import { listRecentAttendance, listStudents } from "@/lib/db";
 import { toAttendanceDate } from "@/lib/time";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+import { requireSession } from "@/lib/auth";
 
 export default async function AttendancePage() {
-  const attendance = await listRecentAttendance(50);
-  const students = await listStudents();
+  const session = await requireSession();
+  const attendance = await listRecentAttendance(50, session.buildingId);
+  const students = await listStudents(session.buildingId);
   const today = toAttendanceDate(new Date().toISOString());
   const studentPhotoById = Object.fromEntries(
     students.map((student) => [student.id, student.photoUrl]),

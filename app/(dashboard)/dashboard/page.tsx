@@ -5,21 +5,43 @@ import {
   getDashboardSummary,
   listRecentAttendance,
   listStudents,
+  listBuildings,
 } from "@/lib/db";
+import { requireSession } from "@/lib/auth";
 import { formatDateTime, toAttendanceDate, isoNow } from "@/lib/time";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+interface PageProps {
+  searchParams: Promise<{ bid?: string }>;
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
   try {
-    const summary = await getDashboardSummary();
-  const recentAttendance = await listRecentAttendance(5);
-  const students = await listStudents();
-  const studentPhotoById = new Map(
-    students.map((student) => [student.id, student.photoUrl]),
-  );
+    const session = await requireSession();
+    const { bid: queryBid } = await searchParams;
+    
+    // Core logic: Owners can override their building view via query params
+    const effectiveBuildingId = session.role === "owner" 
+      ? (queryBid || session.buildingId) 
+      : session.buildingId;
+
+    const [summary, recentAttendance, students, buildings] = await Promise.all([
+      getDashboardSummary(effectiveBuildingId),
+      listRecentAttendance(5, effectiveBuildingId),
+      listStudents(effectiveBuildingId),
+      session.role === "owner" ? listBuildings() : Promise.resolve([])
+    ]);
+
+    const activeBuildingName = effectiveBuildingId 
+      ? (buildings.find(b => b.id === effectiveBuildingId)?.name || "Selected Building")
+      : "Overall (All Buildings)";
+
+    const studentPhotoById = new Map(
+      students.map((student) => [student.id, student.photoUrl]),
+    );
   const todayStr = toAttendanceDate(isoNow());
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
@@ -68,7 +90,37 @@ export default async function DashboardPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">{t("dashboard.title")}</h1>
-          <p className="page-subtitle">{t("dashboard.subtitle")}</p>
+          <p className="page-subtitle">
+            {session.role === "owner" ? (
+              <span className="flex items-center gap-2">
+                <span className="inline-block w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                Managing: <strong className="text-indigo-600">{activeBuildingName}</strong>
+              </span>
+            ) : (
+              t("dashboard.subtitle")
+            )}
+          </p>
+          
+          {session.role === "owner" && (
+            <div className="mt-4 flex items-center gap-3">
+              <form method="GET" action="/dashboard" className="flex items-center gap-2">
+                <select 
+                  name="bid" 
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
+                  defaultValue={effectiveBuildingId || ""}
+                  onChange={(e) => (e.target.form as HTMLFormElement).submit()}
+                >
+                  <option value="">All Buildings</option>
+                  {buildings.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <noscript>
+                  <button type="submit" className="text-xs bg-slate-900 text-white px-2 py-1 rounded">Apply</button>
+                </noscript>
+              </form>
+            </div>
+          )}
         </div>
         <Link href="/recognition" className="btn btn--primary">
           <svg

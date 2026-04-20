@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
-  const events = await listAttendanceReport(5000, date);
+  const events = await listAttendanceReport(5000, date || undefined);
 
   const lines = [
     [

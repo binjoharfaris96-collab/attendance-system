@@ -21,7 +21,7 @@ import { revalidatePath } from "next/cache";
 
 export async function linkUserToStudentAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const studentId = formData.get("studentId") as string;
   const userId = formData.get("userId") as string;
@@ -37,7 +37,7 @@ export async function linkUserToStudentAction(formData: FormData) {
 
 export async function linkUserToTeacherAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const teacherId = formData.get("teacherId") as string;
   const userId = formData.get("userId") as string;
@@ -53,7 +53,7 @@ export async function linkUserToTeacherAction(formData: FormData) {
 
 export async function createAnnouncementAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
@@ -62,7 +62,7 @@ export async function createAnnouncementAction(formData: FormData) {
   if (!title || !content) return { error: "Missing fields" };
 
   try {
-    await createAnnouncement(title, content, targetRole || "all");
+    await createAnnouncement(title, content, targetRole || "all", session.buildingId);
     revalidatePath("/student");
     revalidatePath("/teacher");
     revalidatePath("/dashboard/announcements");
@@ -74,7 +74,7 @@ export async function createAnnouncementAction(formData: FormData) {
 
 export async function deleteAnnouncementAction(id: string) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   try {
     await deleteAnnouncement(id);
@@ -87,7 +87,7 @@ export async function deleteAnnouncementAction(id: string) {
 
 export async function createTeacherAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const fullName = formData.get("fullName") as string;
   const department = formData.get("department") as string;
@@ -95,7 +95,7 @@ export async function createTeacherAction(formData: FormData) {
   if (!fullName) return { error: "Name is required" };
 
   try {
-    await createTeacher({ fullName, department });
+    await createTeacher({ fullName, department, buildingId: session.buildingId });
     revalidatePath("/dashboard/teachers");
     return { success: true };
   } catch (err: any) {
@@ -105,7 +105,7 @@ export async function createTeacherAction(formData: FormData) {
 
 export async function deleteTeacherAction(id: string) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   try {
     await deleteTeacher(id);
@@ -118,7 +118,7 @@ export async function deleteTeacherAction(id: string) {
 
 export async function createClassAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const name = formData.get("name") as string;
   const teacherId = formData.get("teacherId") as string;
@@ -127,7 +127,7 @@ export async function createClassAction(formData: FormData) {
   if (!name || !teacherId) return { error: "Name and Teacher are required" };
 
   try {
-    await createClass({ name, teacherId, subject });
+    await createClass({ name, teacherId, subject, buildingId: session.buildingId });
     revalidatePath("/classes");
     return { success: true };
   } catch (err: any) {
@@ -137,7 +137,7 @@ export async function createClassAction(formData: FormData) {
 
 export async function deleteClassAction(id: string) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   try {
     await deleteClass(id);
@@ -150,7 +150,7 @@ export async function deleteClassAction(id: string) {
 
 export async function enrollStudentAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const classId = formData.get("classId") as string;
   const studentId = formData.get("studentId") as string;
@@ -168,7 +168,7 @@ export async function enrollStudentAction(formData: FormData) {
 
 export async function unenrollStudentAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const classId = formData.get("classId") as string;
   const studentId = formData.get("studentId") as string;
@@ -184,7 +184,7 @@ export async function unenrollStudentAction(formData: FormData) {
 
 export async function updateClassTeacherAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const classId = formData.get("classId") as string;
   const teacherId = formData.get("teacherId") as string;
@@ -200,7 +200,7 @@ export async function updateClassTeacherAction(formData: FormData) {
 
 export async function createScheduleAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   const classId = formData.get("classId") as string;
   const teacherId = formData.get("teacherId") as string;
@@ -225,14 +225,14 @@ export async function createScheduleAction(formData: FormData) {
 
 export async function saveWeeklyScheduleAction(payload: { classId: string, schedules: Array<{ teacherId: string; subject: string; dayOfWeek: string; startTime: string; endTime: string }> }) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   if (!payload.classId || !payload.schedules) {
     return { error: "Class ID and Schedule Data are required" };
   }
 
   try {
-    await saveWeeklySchedulesForClass(payload.classId, payload.schedules);
+    await saveWeeklySchedulesForClass(payload.classId, payload.schedules, session.buildingId);
     revalidatePath("/dashboard/schedules");
     revalidatePath("/teacher"); 
     revalidatePath("/student");
@@ -244,7 +244,7 @@ export async function saveWeeklyScheduleAction(payload: { classId: string, sched
 
 export async function deleteScheduleAction(id: string) {
   const session = await requireSession();
-  if (session.role !== "admin") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
 
   try {
     await deleteSchedule(id);

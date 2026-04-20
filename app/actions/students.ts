@@ -80,7 +80,7 @@ export async function createStudentAction(
   formData: FormData,
 ) {
   void previousState;
-  await requireSession();
+  const session = await requireSession();
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
@@ -95,7 +95,7 @@ export async function createStudentAction(
   }
 
   try {
-    await createStudent(input);
+    await createStudent({ ...input, buildingId: session.buildingId });
   } catch (error) {
     return {
       status: "error",

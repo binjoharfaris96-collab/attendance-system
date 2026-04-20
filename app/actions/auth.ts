@@ -58,8 +58,8 @@ export async function login(
     } satisfies ActionState;
   }
 
-  // Admin email always gets admin role; DB users use their stored role
-  const role = isAdminEmail ? "admin" : (user?.role || "admin");
+  // Admin email always gets owner role; DB users use their stored role
+  const role = isAdminEmail ? "owner" : (user?.role || "admin");
 
   await createSession(email);
   console.log("LOGIN SUCCESS:", email, "assigned role:", role);
@@ -69,6 +69,8 @@ export async function login(
     redirect("/teacher");
   } else if (role === "student") {
     redirect("/student");
+  } else if (role === "owner" || role === "admin") {
+    redirect("/dashboard");
   } else {
     redirect("/dashboard");
   }
@@ -127,6 +129,7 @@ export async function register(
       passwordHash,
       fullName,
       role,
+      buildingId: "default-main", // Default campus for self-registered users
     });
 
     await createSession(email);

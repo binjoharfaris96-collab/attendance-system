@@ -57,7 +57,12 @@ export default async function AttendanceMarkingPage({
             <h3 className="font-bold text-[var(--color-ink)]">Student Attendance List</h3>
          </div>
          <AttendanceMarker 
-           students={data.students} 
+           students={data.students.map(s => ({
+             id: s.id,
+             fullName: s.fullName,
+             studentCode: s.studentCode,
+             attendance: s.status ? { status: s.status, notes: s.attendanceNotes } : null
+           }))} 
            scheduleId={scheduleId} 
            date={today} 
          />

@@ -1,11 +1,13 @@
 import { getSchoolwideStats, getAtRiskStudents, listAllClasses } from "@/lib/db";
 import { TrendingUp, AlertTriangle, BarChart3, Users, Award, Percent } from "lucide-react";
 import { ReportGenerator } from "@/components/admin/report-generator";
+import { requireSession } from "@/lib/auth";
 
 export default async function StatisticsPage() {
-  const stats = await getSchoolwideStats();
-  const atRisk = await getAtRiskStudents(80); // <80% is at risk
-  const classes = await listAllClasses();
+  const session = await requireSession();
+  const stats = await getSchoolwideStats(session.buildingId);
+  const atRisk = await getAtRiskStudents(80, session.buildingId); // <80% is at risk
+  const classes = await listAllClasses(session.buildingId);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

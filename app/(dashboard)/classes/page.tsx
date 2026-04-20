@@ -1,13 +1,15 @@
+import Link from "next/link";
+import { ClassForm } from "@/components/admin/class-form";
+import { requireSession } from "@/lib/auth";
 import { listAllClasses, listTeachers } from "@/lib/db";
 import { getAppLanguage } from "@/lib/i18n-server";
 import { createTranslator } from "@/lib/i18n";
-import { BookOpen, Users, GraduationCap, ChevronRight, School } from "lucide-react";
-import Link from "next/link";
-import { ClassForm } from "@/components/admin/class-form";
+import { School, Users, BookOpen, GraduationCap, ChevronRight } from "lucide-react";
 
 export default async function ClassesPage() {
-  const classes = await listAllClasses();
-  const teachers = await listTeachers();
+  const session = await requireSession();
+  const classes = await listAllClasses(session.buildingId);
+  const teachers = await listTeachers(session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

@@ -11,6 +11,7 @@ export const idleActionState: ActionState = {
 export type Session = {
   email: string;
   role: string;
+  buildingId: string | null;
   expiresAt: number;
 };
 
@@ -30,6 +31,7 @@ export type Student = {
   dateOfBirth: string | null;
   parentName: string | null;
   parentPhone: string | null;
+  buildingId: string | null;
 };
 
 export type StudentListItem = Student & {
@@ -50,6 +52,7 @@ export type AttendanceEvent = {
   notes: string | null;
   attendanceDate: string;
   capturedAt: string;
+  buildingId: string | null;
 };
 
 export type Schedule = {
@@ -62,6 +65,7 @@ export type Schedule = {
   dayOfWeek: string;
   startTime: string;
   endTime: string;
+  buildingId: string | null;
 };
 
 export type DashboardSummary = {

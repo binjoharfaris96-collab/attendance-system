@@ -22,6 +22,8 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "nav.settings": { en: "Settings", ar: "الإعدادات" },
   "nav.announcements": { en: "Announcements", ar: "الإعلانات" },
   "nav.helpCenter": { en: "Help Center", ar: "مركز المساعدة" },
+  "nav.buildings": { en: "Buildings", ar: "المباني" },
+  "nav.admins": { en: "Administrators", ar: "المسؤولون" },
   "nav.management": { en: "Management", ar: "الإدارة" },
   "nav.schedules": { en: "Schedules", ar: "الجداول" },
   "nav.logout": { en: "Log Out", ar: "تسجيل الخروج" },
@@ -538,6 +540,22 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "register.successTitle": { en: "Registration Successful!", ar: "تم التسجيل بنجاح!" },
   "register.successSubtitle": { en: "Your profile has been created. You can now log in using your school email.", ar: "تم إنشاء ملفك الشخصي. يمكنك الآن تسجيل الدخول باستخدام بريدك الإلكتروني المدرسي." },
   "register.goToLogin": { en: "Go to Login", ar: "الذهاب لتسجيل الدخول" },
+  // â”€â”€ Buildings â”€â”€
+  "buildings.title": { en: "Building Management", ar: "إدارة المباني" },
+  "buildings.subtitle": { en: "Create and manage campus buildings and assign administrators.", ar: "إنشاء وإدارة مباني الحرم المدرسي وتعيين المسؤولين." },
+  "buildings.list": { en: "Configured Buildings", ar: "المباني المهيأة" },
+  "buildings.noBuildings": { en: "No buildings configured yet.", ar: "لم يتم تهيئة أي مباني بعد." },
+  "buildings.addBuilding": { en: "Add New Building", ar: "إضافة مبنى جديد" },
+  "buildings.name": { en: "Building Name", ar: "اسم المبنى" },
+  "buildings.address": { en: "Address", ar: "العنوان" },
+  "buildings.create": { en: "Create Building", ar: "إنشاء مبنى" },
+  "buildings.adminManagement": { en: "Administrator Assignments", ar: "تعيينات المسؤولين" },
+  "buildings.adminDesc": { en: "Directly link administrators to specific buildings. Admins will only see data for their assigned building. Owners see everything.", ar: "اربط المسؤولين مباشرة بمبانٍ محددة. سيرى المسؤولون بيانات المبنى المخصص لهم فقط. يرى المالكون كل شيء." },
+  "buildings.selectBuilding": { en: "Select Building", ar: "اختر المبنى" },
+  "buildings.unassigned": { en: "All Buildings (Owner View)", ar: "جميع المباني (عرض المالك)" },
+  "buildings.assign": { en: "Assign", ar: "تعيين" },
+  "buildings.delete": { en: "Delete", ar: "حذف" },
+  "buildings.confirmDelete": { en: "Are you sure you want to delete this building?", ar: "هل أنت متأكد من حذف هذا المبنى؟" },
 };
 
 /**

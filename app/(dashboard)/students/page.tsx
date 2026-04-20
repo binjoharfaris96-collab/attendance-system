@@ -6,10 +6,13 @@ import { listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
 
+import { requireSession } from "@/lib/auth";
+
 export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
-  const students = await listStudents();
+  const session = await requireSession();
+  const students = await listStudents(session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
