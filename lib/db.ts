@@ -632,20 +632,24 @@ export async function getDashboardSummary(buildingId?: string | null) {
   let todaySql = `SELECT COUNT(*) AS total FROM attendance_events WHERE attendance_date = :today`;
   let last7Sql = `SELECT COUNT(*) AS total FROM attendance_events WHERE attendance_date >= :sevenDaysAgo`;
   
-  const args: any = { today, sevenDaysAgo };
   if (buildingId) {
     totalStudentsSql += ` AND building_id = :buildingId `;
     totalClassesSql += ` AND building_id = :buildingId `;
     todaySql += ` AND building_id = :buildingId `;
     last7Sql += ` AND building_id = :buildingId `;
-    args.buildingId = buildingId;
   }
 
+  const argsTotal: Record<string, string> | undefined = buildingId ? { buildingId } : undefined;
+  const argsToday: Record<string, string> = buildingId ? { today, buildingId } : { today };
+  const argsLast7: Record<string, string> = buildingId
+    ? { sevenDaysAgo, buildingId }
+    : { sevenDaysAgo };
+
   const [rsTotal, rsClasses, rsToday, rsLast7] = await Promise.all([
-    database.execute({ sql: totalStudentsSql, args }),
-    database.execute({ sql: totalClassesSql, args }),
-    database.execute({ sql: todaySql, args }),
-    database.execute({ sql: last7Sql, args })
+    database.execute({ sql: totalStudentsSql, args: argsTotal }),
+    database.execute({ sql: totalClassesSql, args: argsTotal }),
+    database.execute({ sql: todaySql, args: argsToday }),
+    database.execute({ sql: last7Sql, args: argsLast7 })
   ]);
 
   return {
@@ -663,16 +667,17 @@ export async function getTodayAttendanceBreakdown(buildingId?: string | null): P
 
   let totalStudentsSql = `SELECT COUNT(*) AS total FROM students WHERE 1=1`;
   let eventsSql = `SELECT captured_at AS capturedAt FROM attendance_events WHERE attendance_date = :today`;
-  const args: any = { today };
   if (buildingId) {
     totalStudentsSql += ` AND building_id = :buildingId `;
     eventsSql += ` AND building_id = :buildingId `;
-    args.buildingId = buildingId;
   }
 
+  const argsTotal: Record<string, string> | undefined = buildingId ? { buildingId } : undefined;
+  const argsEvents: Record<string, string> = buildingId ? { today, buildingId } : { today };
+
   const [rsTotal, rsEvents] = await Promise.all([
-    database.execute({ sql: totalStudentsSql, args }),
-    database.execute({ sql: eventsSql, args })
+    database.execute({ sql: totalStudentsSql, args: argsTotal }),
+    database.execute({ sql: eventsSql, args: argsEvents })
   ]);
 
   const totalStudents = Number(rsTotal.rows[0]?.total ?? 0);
