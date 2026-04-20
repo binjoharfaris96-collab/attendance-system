@@ -49,11 +49,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=config", request.url));
   }
 
+  // Standardized redirect_uri calculation (must match authorization step exactly)
   const origin = request.nextUrl.origin;
   const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-  const baseUrl = isLocalhost
-    ? origin
-    : (process.env.NEXTAUTH_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin));
+  
+  const baseUrl = isLocalhost 
+    ? origin 
+    : (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin));
+
   const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
 
   try {
@@ -71,7 +74,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error("Google token exchange failed:", await tokenResponse.text());
+      const errorBody = await tokenResponse.text();
+      console.error("Google token exchange failed:", {
+        status: tokenResponse.status,
+        body: errorBody,
+        sentRedirectUri: redirectUri
+      });
       return NextResponse.redirect(new URL("/login?error=token", request.url));
     }
 

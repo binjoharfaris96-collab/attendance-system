@@ -19,11 +19,14 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine the callback URL — use request origin for localhost, NEXTAUTH_URL for production
+  // Robust redirect_uri calculation
   const origin = request.nextUrl.origin;
   const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-  const baseUrl = isLocalhost
-    ? origin
-    : (process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin);
+  
+  const baseUrl = isLocalhost 
+    ? origin 
+    : (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin));
+
   const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
 
   // Generate a CSRF state token and store it in a cookie
