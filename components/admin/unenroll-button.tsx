@@ -28,7 +28,7 @@ export function UnenrollButton({
         }
       }}
       disabled={isPending}
-      className="p-2 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 rounded-lg disabled:opacity-50" 
+      className="p-2 text-[color-mix(in_srgb,var(--color-red)_82%,white)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] rounded-lg disabled:opacity-50" 
       title="Remove from class"
     >
       <MinusCircle className="w-4 h-4" />

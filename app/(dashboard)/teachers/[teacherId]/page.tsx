@@ -37,7 +37,7 @@ export default async function TeacherDetailPage({ params }: { params: Promise<{ 
         <DeleteButton 
           id={teacherId} 
           onDelete={deleteTeacherAction}
-          className="btn text-red-600 hover:bg-red-50 flex items-center gap-2 border border-red-200"
+          className="btn btn--danger flex items-center gap-2"
         />
       </div>
 

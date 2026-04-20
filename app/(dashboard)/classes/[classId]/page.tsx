@@ -35,7 +35,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ cl
         <DeleteButton 
           id={classId} 
           onDelete={deleteClassAction}
-          className="btn text-red-600 hover:bg-red-50 flex items-center gap-2 border border-red-200"
+          className="btn btn--danger flex items-center gap-2"
         />
       </div>
 
@@ -48,15 +48,15 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ cl
                 <p className="text-[var(--color-muted)] font-medium">{classData.subject || "General Section"}</p>
              </div>
              
-             <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 border border-purple-100">
-                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-purple-600 shadow-sm">
+             <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                 <div className="w-10 h-10 rounded-lg bg-[var(--surface-1)] border border-[var(--color-line)] flex items-center justify-center text-purple-400 shadow-sm">
                    <GraduationCap className="w-5 h-5" />
-                </div>
-                <div>
-                   <p className="text-[10px] font-bold uppercase text-purple-400 tracking-wider">Instructor</p>
-                   <p className="text-sm font-bold text-purple-900">{classData.teacherName}</p>
-                </div>
-             </div>
+                 </div>
+                 <div>
+                    <p className="text-[10px] font-bold uppercase text-purple-400 tracking-wider">Instructor</p>
+                    <p className="text-sm font-bold text-[var(--color-ink)]">{classData.teacherName}</p>
+                 </div>
+              </div>
           </div>
 
           <EnrollmentForm 

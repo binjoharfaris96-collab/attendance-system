@@ -16,7 +16,7 @@ export function BuildingSelect({
     <form method="GET" action="/dashboard" className="flex items-center gap-2">
       <select
         name="bid"
-        className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer"
+        className="field-input w-auto py-2 text-sm font-medium cursor-pointer"
         defaultValue={defaultValue}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
       >
@@ -30,7 +30,7 @@ export function BuildingSelect({
       <noscript>
         <button
           type="submit"
-          className="text-xs bg-slate-900 text-white px-2 py-1 rounded"
+          className="btn btn--outline text-xs px-3 py-2"
         >
           Apply
         </button>

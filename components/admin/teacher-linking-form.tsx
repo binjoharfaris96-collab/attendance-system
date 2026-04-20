@@ -64,7 +64,7 @@ export function TeacherLinkingForm({
           <button 
             onClick={handleUnlink}
             disabled={isPending}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+            className="p-2 text-[color-mix(in_srgb,var(--color-red)_90%,white)] hover:bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] rounded-lg transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
             title="Unlink account"
           >
             <Trash2 className="w-4 h-4" />

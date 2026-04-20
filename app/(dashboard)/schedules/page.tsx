@@ -92,7 +92,7 @@ export default async function SchedulesPage() {
                         <DeleteButton 
                           id={item.id} 
                           onDelete={deleteScheduleAction}
-                          className="p-2 text-[var(--color-muted)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-[var(--color-muted)] hover:text-[color-mix(in_srgb,var(--color-red)_90%,white)] hover:bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] rounded-lg transition-colors"
                         />
                       </div>
                     ))}

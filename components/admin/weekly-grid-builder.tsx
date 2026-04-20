@@ -111,24 +111,24 @@ export function WeeklyGridBuilder({
   return (
     <div className="space-y-8">
       {/* Header & Class Picker */}
-      <div className="bg-white/80 backdrop-blur-xl border border-slate-200 p-8 rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300">
+      <div className="card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300">
         <div className="flex-1 space-y-3">
-          <label className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
-            <Calendar className="w-4 h-4 text-indigo-500" />
+          <label className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest flex items-center gap-2 px-1">
+            <Calendar className="w-4 h-4 text-[var(--color-accent)]" />
             Class Timetable Mapper
           </label>
           <div className="relative group">
             <select 
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full md:max-w-md appearance-none px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 transition-all duration-300 cursor-pointer shadow-inner"
+              className="field-input w-full md:max-w-md appearance-none px-6 py-4 font-bold cursor-pointer"
             >
               <option value="">-- Choose target classroom --</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <div className="absolute top-1/2 right-6 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
+            <div className="absolute top-1/2 right-6 -translate-y-1/2 pointer-events-none text-[var(--color-muted)] group-hover:text-[var(--color-accent)] transition-colors">
               <Plus className="w-5 h-5 rotate-45" />
             </div>
           </div>
@@ -140,12 +140,12 @@ export function WeeklyGridBuilder({
             disabled={isSaving || !selectedClassId}
             className={`group relative overflow-hidden px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 shadow-xl active:scale-95 flex items-center gap-3 ${
               isSaving 
-               ? 'bg-slate-100 text-slate-400' 
-               : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-indigo-200'
+               ? 'border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] text-[var(--color-muted)]' 
+               : 'bg-[var(--color-accent)] text-white hover:bg-[color-mix(in_srgb,var(--color-accent)_92%,white)]'
             }`}
           >
             {isSaving ? (
-              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-[var(--color-line)] border-t-[var(--color-ink)] rounded-full animate-spin"></div>
             ) : (
               <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
             )}
@@ -169,36 +169,36 @@ export function WeeklyGridBuilder({
 
       {/* 7-Day Grid */}
       {selectedClassId ? (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl shadow-slate-200/40 overflow-hidden transition-all duration-500 animate-in fade-in zoom-in-95">
+        <div className="bg-[var(--surface-1)] rounded-3xl border border-[var(--color-line)] shadow-2xl overflow-hidden transition-all duration-500 animate-in fade-in zoom-in-95">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-100">
-                  <th className="p-4 w-[160px] text-center border-r border-slate-100 bg-white sticky left-0 z-10">
+                <tr className="bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] border-b border-[var(--color-line)]">
+                  <th className="p-4 w-[160px] text-center border-r border-[var(--color-line)] bg-[var(--surface-1)] sticky left-0 z-10">
                     <div className="flex flex-col items-center justify-center opacity-40">
                       <Clock className="w-6 h-6 mb-1" />
                       <span className="text-[10px] font-black uppercase tracking-tighter">Timeline</span>
                     </div>
                   </th>
                   {DAYS.map(day => (
-                    <th key={day} className="p-5 text-center min-w-[180px] border-r border-slate-100">
-                      <span className="text-sm font-black text-slate-900 uppercase tracking-widest block">{day}</span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Regular Slot</span>
+                    <th key={day} className="p-5 text-center min-w-[180px] border-r border-[var(--color-line)]">
+                      <span className="text-sm font-black text-[var(--color-ink)] uppercase tracking-widest block">{day}</span>
+                      <span className="text-[10px] text-[var(--color-muted)] font-bold uppercase tracking-tighter">Regular Slot</span>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-[var(--color-line)]">
                 {periods.map((period, pIndex) => (
-                  <tr key={pIndex} className="group hover:bg-slate-50/30 transition-colors">
+                  <tr key={pIndex} className="group hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)] transition-colors">
                     {/* Period Row Header */}
-                    <td className="p-4 border-r border-slate-100 sticky left-0 bg-white z-10 shadow-lg shadow-slate-100 md:shadow-none transition-shadow group-hover:shadow-indigo-50">
+                    <td className="p-4 border-r border-[var(--color-line)] sticky left-0 bg-[var(--surface-1)] z-10 shadow-lg md:shadow-none transition-shadow">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between px-1">
-                          <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">Period {pIndex + 1}</span>
+                          <span className="text-[10px] font-black text-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] border border-[color-mix(in_srgb,var(--color-accent)_25%,transparent)] px-1.5 py-0.5 rounded uppercase">Period {pIndex + 1}</span>
                           <button 
                             onClick={() => handleRemovePeriod(pIndex)}
-                            className="hidden group-hover:block p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                            className="hidden group-hover:block p-1 text-[var(--color-muted)] hover:text-[color-mix(in_srgb,var(--color-red)_90%,white)] hover:bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] rounded transition-all"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -208,13 +208,13 @@ export function WeeklyGridBuilder({
                             type="time" 
                             value={period.startTime} 
                             onChange={(e) => handlePeriodTimeChange(pIndex, "startTime", e.target.value)}
-                            className="text-[11px] font-bold bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 outline-none focus:bg-white focus:border-indigo-200 transition-all text-center text-slate-700"
+                            className="text-[11px] font-bold bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] border border-[var(--color-line)] rounded-lg px-2 py-1 outline-none focus:border-[color-mix(in_srgb,var(--color-accent)_60%,var(--color-line))] transition-all text-center text-[var(--color-ink)]"
                           />
                           <input 
                             type="time" 
                             value={period.endTime} 
                             onChange={(e) => handlePeriodTimeChange(pIndex, "endTime", e.target.value)}
-                            className="text-[11px] font-bold bg-slate-50 border border-slate-100 rounded-lg px-2 py-1 outline-none focus:bg-white focus:border-indigo-200 transition-all text-center text-slate-700"
+                            className="text-[11px] font-bold bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] border border-[var(--color-line)] rounded-lg px-2 py-1 outline-none focus:border-[color-mix(in_srgb,var(--color-accent)_60%,var(--color-line))] transition-all text-center text-[var(--color-ink)]"
                           />
                         </div>
                       </div>
@@ -227,21 +227,21 @@ export function WeeklyGridBuilder({
                       const hasData = cell.teacherId && cell.subject;
 
                       return (
-                        <td key={key} className={`p-3 border-r border-slate-50 align-top transition-all duration-300 focus-within:bg-indigo-50/20 ${hasData ? 'bg-emerald-50/5' : ''}`}>
+                        <td key={key} className={`p-3 border-r border-[var(--color-line)] align-top transition-all duration-300 focus-within:bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)] ${hasData ? 'bg-[color-mix(in_srgb,var(--color-green)_8%,transparent)]' : ''}`}>
                           <div className="flex flex-col gap-2 h-full">
                             <input 
                               type="text" 
                               placeholder="Subject Name" 
                               value={cell.subject || ""}
                               onChange={e => handleCellChange(day, pIndex, "subject", e.target.value)}
-                              className="text-xs font-bold text-slate-900 placeholder:text-slate-200 bg-transparent border-none outline-none focus:placeholder:opacity-0 transition-opacity"
+                              className="text-xs font-bold text-[var(--color-ink)] placeholder:text-[color-mix(in_srgb,var(--color-muted)_65%,transparent)] bg-transparent border-none outline-none focus:placeholder:opacity-0 transition-opacity"
                             />
                             <div className="relative group/sel">
                               <select 
                                 value={cell.teacherId || ""}
                                 onChange={e => handleCellChange(day, pIndex, "teacherId", e.target.value)}
-                                className={`w-full text-[10px] font-black uppercase tracking-tight bg-slate-50/50 hover:bg-white border border-slate-100 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-indigo-100 transition-all appearance-none cursor-pointer ${
-                                  !cell.teacherId ? 'text-slate-300' : 'text-indigo-600 border-indigo-100 bg-white'
+                                className={`w-full text-[10px] font-black uppercase tracking-tight bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] hover:bg-[color-mix(in_srgb,var(--surface-1)_80%,transparent)] border border-[var(--color-line)] rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-accent)_24%,transparent)] transition-all appearance-none cursor-pointer ${
+                                  !cell.teacherId ? 'text-[var(--color-muted)]' : 'text-[var(--color-accent)] border-[color-mix(in_srgb,var(--color-accent)_25%,var(--color-line))] bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]'
                                 }`}
                               >
                                 <option value="">Select Teacher</option>
@@ -250,7 +250,7 @@ export function WeeklyGridBuilder({
                                 ))}
                               </select>
                               <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
-                                <Plus className="w-3 h-3 text-slate-900" />
+                                <Plus className="w-3 h-3 text-[var(--color-muted)]" />
                               </div>
                             </div>
                           </div>
@@ -263,26 +263,26 @@ export function WeeklyGridBuilder({
             </table>
           </div>
           
-          <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex justify-center">
+          <div className="p-6 bg-[color-mix(in_srgb,var(--surface-2)_60%,transparent)] border-t border-[var(--color-line)] flex justify-center">
              <button 
                 onClick={handleAddPeriod}
-                className="group px-6 py-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-100/50 transition-all"
+                className="group px-6 py-2.5 border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--surface-1)_76%,transparent)] rounded-xl flex items-center gap-3 text-xs font-black uppercase tracking-widest text-[var(--color-muted)] hover:text-[var(--color-accent)] hover:border-[color-mix(in_srgb,var(--color-accent)_35%,var(--color-line))] hover:shadow-lg transition-all"
              >
                 <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                 Append New Period Row
              </button>
-          </div>
+           </div>
         </div>
       ) : (
-        <div className="py-24 text-center bg-slate-50 rounded-[40px] border border-dashed border-slate-200 flex flex-col items-center gap-6 group">
-           <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center text-slate-200 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500">
+        <div className="py-24 text-center bg-[color-mix(in_srgb,var(--surface-2)_60%,transparent)] rounded-[40px] border border-dashed border-[var(--color-line)] flex flex-col items-center gap-6 group">
+           <div className="w-20 h-20 bg-[color-mix(in_srgb,var(--surface-1)_76%,transparent)] border border-[var(--color-line)] rounded-3xl shadow-xl flex items-center justify-center text-[var(--color-muted)] group-hover:text-[var(--color-accent)] group-hover:scale-110 transition-all duration-500">
              <Calendar className="w-10 h-10" />
            </div>
            <div className="space-y-1">
-             <p className="text-slate-600 font-black text-xl">No Classroom Selected</p>
-             <p className="text-slate-400 text-sm max-w-xs mx-auto">Please select a target class above to start building its comprehensive weekly 7-day schedule.</p>
-           </div>
-        </div>
+             <p className="text-[var(--color-ink)] font-black text-xl">No Classroom Selected</p>
+             <p className="text-[var(--color-muted)] text-sm max-w-xs mx-auto">Please select a target class above to start building its comprehensive weekly 7-day schedule.</p>
+            </div>
+         </div>
       )}
     </div>
   );

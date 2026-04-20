@@ -30,8 +30,8 @@ export default async function StatisticsPage() {
            <p className="text-2xl font-black mt-2">
               {[...stats.classPerformance].sort((a,b) => b.rate - a.rate)[0]?.name || "N/A"}
            </p>
-           <p className="text-sm mt-1 text-emerald-500 bg-white/90 w-fit px-2 py-0.5 rounded-full font-bold">
-              {Math.max(...stats.classPerformance.map(c => c.rate), 0)}% Attendance
+           <p className="text-sm mt-1 text-emerald-50 bg-white/10 w-fit px-2 py-0.5 rounded-full font-bold">
+               {Math.max(...stats.classPerformance.map(c => c.rate), 0)}% Attendance
            </p>
         </div>
 
@@ -83,12 +83,12 @@ export default async function StatisticsPage() {
                     </div>
                  ) : (
                     atRisk.map(s => (
-                       <div key={s.id} className="p-4 flex items-center justify-between hover:bg-red-50/30 transition-colors">
+                       <div key={s.id} className="p-4 flex items-center justify-between hover:bg-[color-mix(in_srgb,var(--color-red)_12%,transparent)] transition-colors">
                           <div className="flex items-center gap-4">
-                             <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
+                             <div className="w-10 h-10 rounded-full bg-[color-mix(in_srgb,var(--color-red)_16%,transparent)] flex items-center justify-center text-[color-mix(in_srgb,var(--color-red)_90%,white)] font-bold border border-[color-mix(in_srgb,var(--color-red)_28%,transparent)]">
                                 {s.rate}%
                              </div>
-                             <div>
+                              <div>
                                 <p className="font-bold text-[var(--color-ink)]">{s.fullName}</p>
                                 <p className="text-xs text-[var(--color-muted)]">{s.className} &middot; {s.studentCode}</p>
                              </div>
