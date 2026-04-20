@@ -43,6 +43,14 @@ If you do not create `.env.local`, the app falls back to:
 - The SQLite database is created automatically on first run
 - `data/` is ignored by git
 
+## Vercel parity (deploy matches local)
+
+If the app works locally but behaves differently on Vercel, it is usually because the Vercel
+deployment is missing environment variables (especially `DATABASE_URL`).
+
+- On Vercel, set `DATABASE_URL` (and usually `DATABASE_AUTH_TOKEN`) to use a persistent database.
+- To quickly inspect environment + database connectivity on any environment, open `/api/health`.
+
 ## Exporting reports
 
 - Full export: `/api/reports/attendance`
