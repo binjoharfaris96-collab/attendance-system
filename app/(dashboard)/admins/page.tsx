@@ -50,68 +50,78 @@ export default async function AdminsPage() {
       {/* Add New Admin Form */}
       <div className="mb-12 bg-[var(--surface-1)] rounded-3xl shadow-xl border border-[var(--color-line)] p-8">
         <h2 className="text-xl font-bold text-[var(--color-ink)] mb-6 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="text-indigo-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           Register New Administrator
         </h2>
         
         <form action={async (formData) => {
           "use server";
           const { createAdminAccountAction } = await import("@/app/actions/admin-management");
-          const result = await createAdminAccountAction(formData);
-          if (result?.error) {
-            // In a real app we'd use useActionState for errors, but for simplicity here we'll just revalidate
-          }
-        }} className="grid md:grid-cols-4 gap-4 items-end">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Full Name</label>
-            <input 
-              name="fullName" 
-              type="text" 
-              placeholder="e.g. John Doe"
-              className="field-input"
-              required 
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Email Address</label>
-            <input 
-              name="email" 
-              type="email" 
-              placeholder="admin@school.com"
-              className="field-input"
-              required 
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Initial Password</label>
-            <input 
-              name="password" 
-              type="password" 
-              placeholder="••••••••"
-              className="field-input"
-              required 
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Assign to Building</label>
-            <div className="flex gap-2">
-              <select
-                name="buildingId"
-                className="field-input flex-1"
-              >
-                <option value="null">Global (No Building)</option>
-                {buildings.map(b => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-              <button 
-                type="submit"
-                className="btn btn--primary"
-              >
-                Create
-              </button>
+          await createAdminAccountAction(formData);
+        }} className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Full Name</label>
+              <input 
+                name="fullName" 
+                type="text" 
+                placeholder="e.g. John Doe"
+                className="field-input"
+                required 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Email Address</label>
+              <input 
+                name="email" 
+                type="email" 
+                placeholder="admin@school.com"
+                className="field-input"
+                required 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Initial Password</label>
+              <input 
+                name="password" 
+                type="password" 
+                placeholder="Min 8 characters"
+                className="field-input"
+                required 
+              />
             </div>
           </div>
+
+          <div className="grid md:grid-cols-3 gap-6 items-end">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Access Level</label>
+              <select name="role" className="field-input">
+                <option value="admin">Administrator (Building Access)</option>
+                <option value="owner">System Owner (Global Override)</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 flex-1">
+              <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider ml-1">Building Primary</label>
+              <div className="flex gap-2">
+                <select
+                  name="buildingId"
+                  className="field-input flex-1"
+                >
+                  <option value="null">Global (No Building)</option>
+                  {buildings.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <button 
+                  type="submit"
+                  className="btn btn--primary w-[160px] h-11"
+                >
+                  Register
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-[var(--color-muted)] italic">Note: Administrators can log in using either these credentials or their linked Google SSO account.</p>
         </form>
       </div>
 

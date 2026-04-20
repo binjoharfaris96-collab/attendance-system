@@ -12,6 +12,7 @@ export type Session = {
   email: string;
   role: string;
   buildingId: string | null;
+  phone?: string | null;
   expiresAt: number;
 };
 

@@ -61,7 +61,11 @@ export default async function SettingsPage() {
                 {t("settings.accountSecurityDesc")}
               </p>
             </div>
-            <AccountSettingsForm initialUsername={authDefaults.email} lang={appLanguage as AppLanguage} />
+            <AccountSettingsForm 
+              initialUsername={session.email} 
+              initialPhone={session.phone}
+              lang={appLanguage as AppLanguage} 
+            />
           </div>
 
           {session.role === "admin" && (

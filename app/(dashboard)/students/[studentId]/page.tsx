@@ -9,7 +9,8 @@ import {
   listAttendanceForStudent, 
   listMisbehaviorReportsForStudent, 
   listStudents,
-  getUnlinkedUsers
+  getUnlinkedUsers,
+  getStudentApprovedParents
 } from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { updateDisciplinaryEventAction } from "@/app/actions/students";
@@ -88,6 +89,7 @@ export default async function StudentDetailPage({
   const attendance = await listAttendanceForStudent(studentId, 20);
   const behaviorReports = await listMisbehaviorReportsForStudent(studentId, 15);
   const unlinkedUsers = await getUnlinkedUsers("student");
+  const linkedParents = await getStudentApprovedParents(studentId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
@@ -119,21 +121,37 @@ export default async function StudentDetailPage({
           {/* Profile Overview Card */}
           <div className="card space-y-4 border-l-4 border-l-blue-500">
             <h2 className="text-lg font-bold text-[var(--color-ink)] flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="text-blue-500"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Student Profile Information
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              {t("student.profileInfo") || "Student Profile Information"}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2">
                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Date of Birth</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">{t("student.dob") || "Date of Birth"}</p>
                   <p className="text-sm font-bold text-[var(--color-ink)]">{student.dateOfBirth || "Not provided"}</p>
                </div>
                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Parent / Guardian</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">{t("student.parentName") || "Parent / Guardian"}</p>
                   <p className="text-sm font-bold text-[var(--color-ink)]">{student.parentName || "Not provided"}</p>
                </div>
                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">Parent Phone</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-muted)] mb-1">{t("student.parentPhone") || "Parent Phone"}</p>
                   <p className="text-sm font-bold font-mono text-blue-600">{student.parentPhone || "Not provided"}</p>
+               </div>
+               {/* Linked Parent Accounts */}
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">Linked App Accounts</p>
+                  {linkedParents.length > 0 ? (
+                    <div className="space-y-1">
+                      {linkedParents.map((lp, idx) => (
+                        <div key={idx} className="flex flex-col">
+                          <p className="text-xs font-bold text-[var(--color-ink)]">{lp.name}</p>
+                          <p className="text-[11px] font-mono font-medium text-indigo-600">{lp.phone || lp.email}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs italic text-[var(--color-muted)]">No app accounts linked</p>
+                  )}
                </div>
             </div>
           </div>

@@ -69,6 +69,8 @@ export async function login(
     redirect("/teacher");
   } else if (role === "student") {
     redirect("/student");
+  } else if (role === "parent") {
+    redirect("/parent");
   } else if (role === "owner" || role === "admin") {
     redirect("/dashboard");
   } else {
@@ -88,6 +90,7 @@ export async function register(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const selectedRole = String(formData.get("role") ?? "student").toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
 
   if (!fullName || !email || !password) {
     return {
@@ -121,7 +124,7 @@ export async function register(
   }
 
   try {
-    const role = selectedRole === "teacher" ? "teacher" : "student";
+    const role = (selectedRole === "teacher" || selectedRole === "parent") ? selectedRole : "student";
 
     const passwordHash = await hashPassword(password);
     await createUser({
@@ -129,6 +132,7 @@ export async function register(
       passwordHash,
       fullName,
       role,
+      phone: role === "parent" ? phone : null,
       buildingId: "default-main", // Default campus for self-registered users
     });
 
@@ -141,7 +145,12 @@ export async function register(
     } satisfies ActionState;
   }
 
-  redirect("/dashboard");
+  let redirectPath = "/dashboard";
+  if (selectedRole === "teacher") redirectPath = "/teacher";
+  if (selectedRole === "student") redirectPath = "/student";
+  if (selectedRole === "parent") redirectPath = "/parent";
+
+  redirect(redirectPath);
 }
 
 export async function logout() {

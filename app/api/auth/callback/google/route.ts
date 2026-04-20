@@ -123,8 +123,20 @@ export async function GET(request: NextRequest) {
 
     // Success! Determine correct redirect path based on their assigned role
     let redirectPath = "/dashboard";
-    if (user.role === "teacher") redirectPath = "/teacher";
-    if (user.role === "student") redirectPath = "/student";
+    
+    // REDIRECT TO ONBOARDING IF:
+    // 1. Freshly created user (role is student by default but we want them to pick)
+    // 2. Parent with no phone number
+    const isNewUser = !user || user.passwordHash === "OAUTH_LOGIN" && (user as any).updatedAt === (user as any).createdAt;
+    const isParentNoPhone = user.role === "parent" && !user.phone;
+
+    if (isNewUser || isParentNoPhone) {
+      redirectPath = "/onboarding";
+    } else {
+      if (user.role === "teacher") redirectPath = "/teacher";
+      if (user.role === "student") redirectPath = "/student";
+      if (user.role === "parent") redirectPath = "/parent";
+    }
 
     return await createSessionResponse(user.email, new URL(redirectPath, request.url));
   } catch (err) {

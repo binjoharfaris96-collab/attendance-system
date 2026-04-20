@@ -13,6 +13,7 @@ export async function createAdminAccountAction(formData: FormData) {
   const fullName = formData.get("fullName") as string;
   const email = (formData.get("email") as string)?.toLowerCase().trim();
   const password = formData.get("password") as string;
+  const role = (formData.get("role") as string) === "owner" ? "owner" : "admin";
   const buildingId = formData.get("buildingId") as string;
 
   if (!fullName || !email || !password) {
@@ -36,7 +37,7 @@ export async function createAdminAccountAction(formData: FormData) {
       email,
       passwordHash,
       fullName,
-      role: "admin",
+      role,
       buildingId: bid
     });
 

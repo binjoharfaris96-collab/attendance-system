@@ -22,6 +22,7 @@ type SessionPayload = {
   email: string;
   role: string;
   buildingId: string | null;
+  phone?: string | null;
   exp: number;
 };
 
@@ -321,11 +322,13 @@ export const getSession = cache(async () => {
   const isAdminEmail = email === resolvedAdminEmail;
   const role = isAdminEmail ? "owner" : (user?.role || "admin");
   const buildingId = user?.buildingId || null;
+  const phone = user ? (user as any).phone : null;
 
   return {
     email,
     role,
     buildingId,
+    phone,
     expiresAt: Date.now() + 86400000,
   };
 });

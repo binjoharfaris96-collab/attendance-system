@@ -23,6 +23,12 @@ export function StudentLinkingForm({
 }) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const filteredUsers = unlinkedUsers.filter(u => 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   async function handleLink(formData: FormData) {
     setIsPending(true);
@@ -77,19 +83,37 @@ export function StudentLinkingForm({
             This student has not yet been bound to a login account. Select a verified user to enable their portal access.
           </p>
           
-          <div className="flex gap-2">
-            <select name="userId" required className="flex-1 input">
-              <option value="">Select unlinked student...</option>
-              {unlinkedUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.email} ({u.fullName})</option>
-              ))}
-            </select>
+          <div className="space-y-3">
+            <input 
+              type="text" 
+              placeholder="Search by email or name..." 
+              className="field-input w-full text-sm" 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+            
+            <div className="max-h-[160px] overflow-y-auto border border-[var(--color-line)] rounded-xl bg-[var(--surface-1)]">
+               {filteredUsers.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-[var(--color-muted)]">No users found matching "{searchTerm}"</div>
+               ) : (
+                  filteredUsers.map(u => (
+                    <label key={u.id} className="flex items-start gap-3 p-3 hover:bg-[var(--surface-2)] cursor-pointer border-b border-[var(--color-line)] last:border-0 transition-colors">
+                      <input type="radio" name="userId" value={u.id} required className="mt-1" />
+                      <div>
+                         <div className="font-bold text-sm text-[var(--color-ink)]">{u.email}</div>
+                         <div className="text-xs text-[var(--color-muted)] font-medium">{u.fullName}</div>
+                      </div>
+                    </label>
+                  ))
+               )}
+            </div>
+            
             <button 
               type="submit" 
               disabled={isPending || unlinkedUsers.length === 0}
-              className="btn btn--primary"
+              className="btn btn--primary w-full justify-center"
             >
-              {isPending ? "..." : "Link"}
+              {isPending ? "Linking account..." : "Link Selected Account"}
             </button>
           </div>
           {unlinkedUsers.length === 0 && (

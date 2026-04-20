@@ -11,6 +11,7 @@ import { requireSession } from "@/lib/auth";
 import { countPhoneDetections, countUnknownFaces } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,10 @@ export default async function DashboardLayout({
 }>) {
   const session = await requireSession();
   console.log("DASHBOARD LOADED");
+
+  if (session.role === "parent") {
+    redirect("/parent");
+  }
 
   let activeNavItems: any[] = [...navigationItems];
   if (session.role === "teacher") {

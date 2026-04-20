@@ -16,8 +16,9 @@ export default async function BuildingsPage() {
     "use server";
     const name = formData.get("name") as string;
     const address = formData.get("address") as string;
+    const grades = formData.getAll("grades").join(",");
     if (!name) return;
-    await createBuilding({ name, address });
+    await createBuilding({ name, address, grades });
     revalidatePath("/buildings");
   }
 
@@ -64,7 +65,21 @@ export default async function BuildingsPage() {
               className="field-input"
             />
           </div>
+
+          {/* Grades Checkboxes */}
           <div className="md:col-span-2 mt-2">
+            <label className="text-sm font-semibold text-[var(--color-muted)] mb-3 block">Supported Grades / Sections</label>
+            <div className="flex flex-wrap gap-3">
+              {['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].map((g) => (
+                <label key={g} className="flex items-center gap-2 px-3 py-2 border border-[var(--color-line)] rounded-xl bg-[var(--surface-2)] cursor-pointer hover:border-[var(--color-accent)] transition-all">
+                   <input type="checkbox" name="grades" value={g} className="rounded w-4 h-4 cursor-pointer text-indigo-600 focus:ring-indigo-500 bg-[var(--surface-1)] border border-[var(--color-line)]" />
+                   <span className="text-sm font-medium">{g}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:col-span-2 mt-6">
             <button
               type="submit"
               className="btn btn--primary w-full md:w-auto justify-center px-10 py-3.5"
@@ -96,6 +111,15 @@ export default async function BuildingsPage() {
                 <div className="flex flex-col min-w-0">
                   <h3 className="font-bold text-[var(--color-ink)] truncate">{b.name}</h3>
                   <p className="text-sm text-[var(--color-muted)] truncate">{b.address || "No address provided"}</p>
+                  
+                  {/* Grades Badge display */}
+                  {(b as any).grades && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {(b as any).grades.split(',').map((g: string) => (
+                         <span key={g} className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-700 dark:text-purple-400 text-[10px] font-bold border border-purple-500/20">{g}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
                

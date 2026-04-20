@@ -7,6 +7,8 @@ import {
 } from "@/lib/db";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { AnnouncementFeed } from "@/components/announcement-feed";
+import { listParentRequestsForStudent } from "@/lib/db";
+import { updateParentRequestAction } from "@/app/actions/parent";
 
 export default async function StudentPortalPage() {
   const session = await requireSession();
@@ -40,6 +42,10 @@ export default async function StudentPortalPage() {
   const assignments = await getStudentAssignments(studentProfile.id);
   const pendingAssignments = assignments.filter(a => a.status === "Not Submitted").length;
 
+  // Incoming parent requests
+  const parentRequests = await listParentRequestsForStudent(studentProfile.id);
+  const pendingRequests = parentRequests.filter(req => req.status === "pending");
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500">
       <div className="flex items-center space-x-4">
@@ -72,6 +78,38 @@ export default async function StudentPortalPage() {
             {assignments.length === 0 && <span className="text-sm italic text-[var(--color-muted)]">No active classes found.</span>}
          </div>
       </div>
+
+      {/* Pending Parent Requests */}
+      {pendingRequests.length > 0 && (
+        <section className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-2xl animate-in slide-in-from-top-4">
+          <h2 className="text-lg font-bold text-blue-700 dark:text-blue-400 mb-4 flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>Connection Requests</span>
+          </h2>
+          <div className="space-y-3">
+            {pendingRequests.map(req => (
+              <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--color-line)]">
+                <div>
+                  <p className="font-bold text-[var(--color-ink)]">{req.parentName}</p>
+                  <p className="text-sm text-[var(--color-muted)]">{req.parentEmail} is requesting access to view your academic and attendance records.</p>
+                </div>
+                <div className="flex gap-2 mt-4 sm:mt-0">
+                  <form action={updateParentRequestAction}>
+                     <input type="hidden" name="requestId" value={req.id} />
+                     <input type="hidden" name="status" value="rejected" />
+                     <button type="submit" className="btn bg-[var(--color-danger)]/10 text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white border-none py-1.5 px-3 uppercase tracking-wider text-xs font-bold">Reject</button>
+                  </form>
+                  <form action={updateParentRequestAction}>
+                     <input type="hidden" name="requestId" value={req.id} />
+                     <input type="hidden" name="status" value="approved" />
+                     <button type="submit" className="btn btn--primary py-1.5 px-3 uppercase tracking-wider text-xs font-bold shadow-none text-white bg-blue-600 hover:bg-blue-700">Approve</button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Attendance Card */}

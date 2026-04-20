@@ -34,17 +34,30 @@ function LinkRow({
 }) {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLinking, setIsLinking] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  async function handleLink(formData: FormData) {
+  const filteredUsers = unlinkedUsers.filter(u => 
+    u.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  async function handleLink(userId: string) {
     setIsPending(true);
     setError(null);
+    const formData = new FormData();
+    formData.append("userId", userId);
+    
     let result;
     if (profile.type === "teacher") {
+      formData.append("teacherId", profile.id);
       result = await linkUserToTeacherAction(formData);
     } else {
+      formData.append("studentId", profile.id);
       result = await linkUserToStudentAction(formData);
     }
     if (result.error) setError(result.error);
+    setIsLinking(false);
     setIsPending(false);
   }
 
@@ -67,60 +80,98 @@ function LinkRow({
   }
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-[var(--color-line)] last:border-0 hover:bg-[color-mix(in_srgb,var(--color-ink)_5%,transparent)] transition-colors">
-      <div className="flex-1 min-w-0 pr-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)] text-[var(--color-accent)]">
-            {profile.type === "teacher" ? <UserCircle className="w-5 h-5" /> : <GraduationCap className="w-5 h-5" />}
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm text-[var(--color-ink)] truncate">{profile.fullName}</h3>
-            <p className="text-xs text-[var(--color-muted)] flex items-center gap-1">
-              {profile.type.charAt(0).toUpperCase() + profile.type.slice(1)} ID: <span className="font-mono">{profile.id.substring(0,6)}...</span>
-            </p>
+    <div className="flex flex-col p-4 border-b border-[var(--color-line)] last:border-0 hover:bg-[color-mix(in_srgb,var(--color-ink)_2%,transparent)] transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0 pr-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)] text-[var(--color-accent)]">
+              {profile.type === "teacher" ? <UserCircle className="w-5 h-5" /> : <GraduationCap className="w-5 h-5" />}
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-[var(--color-ink)] truncate">{profile.fullName}</h3>
+              <p className="text-xs text-[var(--color-muted)] flex items-center gap-1">
+                {profile.type.charAt(0).toUpperCase() + profile.type.slice(1)} ID: <span className="font-mono">{profile.id.substring(0,6)}...</span>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 max-w-sm ml-auto">
-        {profile.userId ? (
-          <div className="flex items-center justify-between p-2 bg-[color-mix(in_srgb,var(--secondary)_10%,transparent)] border border-[color-mix(in_srgb,var(--secondary)_20%,transparent)] rounded-lg group">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <CheckCircle2 className="w-4 h-4 text-[var(--secondary)] shrink-0" />
-              <div className="truncate">
-                <p className="text-xs font-semibold text-[var(--color-ink)] truncate">{profile.userEmail}</p>
-                <p className="text-[10px] text-[var(--secondary)]">Linked Account</p>
+        <div className="flex-1 max-w-sm ml-auto text-right">
+          {profile.userId ? (
+            <div className="inline-flex items-center justify-between p-2 bg-[color-mix(in_srgb,var(--secondary)_10%,transparent)] border border-[color-mix(in_srgb,var(--secondary)_20%,transparent)] rounded-lg group">
+              <div className="flex items-center gap-2 overflow-hidden text-left pl-1">
+                <CheckCircle2 className="w-4 h-4 text-[var(--secondary)] shrink-0" />
+                <div className="truncate pr-3">
+                  <p className="text-xs font-semibold text-[var(--color-ink)] truncate">{profile.userEmail}</p>
+                  <p className="text-[10px] text-[var(--secondary)]">Linked Account</p>
+                </div>
               </div>
+              <button 
+                onClick={handleUnlink}
+                disabled={isPending}
+                className="p-1.5 text-red-600 hover:bg-[color-mix(in_srgb,red_10%,transparent)] rounded transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 shrink-0 border border-transparent hover:border-red-600/30"
+                title="Unlink account"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
-            <button 
-              onClick={handleUnlink}
-              disabled={isPending}
-              className="p-1.5 text-red-600 hover:bg-[color-mix(in_srgb,red_10%,transparent)] rounded transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50 shrink-0 ml-2"
-              title="Unlink account"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <form action={handleLink} className="flex gap-2">
-            <input type="hidden" name={profile.type === "teacher" ? "teacherId" : "studentId"} value={profile.id} />
-            <select name="userId" required className="flex-1 input h-9 text-xs py-1" disabled={isPending}>
-              <option value="">Select unlinked...</option>
-              {unlinkedUsers.map(u => (
-                <option key={u.id} value={u.id}>{u.email}</option>
-              ))}
-            </select>
-            <button 
-              type="submit" 
-              disabled={isPending || unlinkedUsers.length === 0}
-              className="btn btn--primary h-9 px-3 text-xs w-[60px]"
-            >
-              {isPending ? "..." : "Link"}
-            </button>
-          </form>
-        )}
-        {error && <p className="text-[10px] text-red-600 mt-1 absolute">{error}</p>}
+          ) : (
+            <>
+               {!isLinking ? (
+                  <button 
+                    onClick={() => setIsLinking(true)}
+                    disabled={isPending}
+                    className="btn btn--outline h-9 px-4 text-xs"
+                  >
+                    Bind Email Account
+                  </button>
+               ) : (
+                  <button onClick={() => setIsLinking(false)} className="text-xs font-medium text-[var(--color-muted)] hover:text-red-500 py-2">
+                     Cancel Binding
+                  </button>
+               )}
+            </>
+          )}
+          {error && <p className="text-[10px] text-red-600 mt-2">{error}</p>}
+        </div>
       </div>
+      
+      {/* Custom Combobox UI rendered block-level when isLinking is true */}
+      {isLinking && !profile.userId && (
+         <div className="mt-4 pt-4 border-t border-[var(--color-line)] animate-in fade-in slide-in-from-top-2 duration-300">
+            <input 
+               type="text" 
+               placeholder="Search by exact email or full name..." 
+               className="field-input w-full text-sm mb-2" 
+               autoFocus
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+            />
+            <div className="max-h-[140px] overflow-y-auto border border-[var(--color-line)] rounded-xl bg-[var(--surface-1)]">
+               {filteredUsers.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-[var(--color-muted)]">No unlinked accounts found matching your search.</div>
+               ) : (
+                  filteredUsers.map(u => (
+                     <button 
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleLink(u.id)}
+                        disabled={isPending}
+                        className="w-full flex items-start gap-3 p-3 hover:bg-[color-mix(in_srgb,var(--color-accent)_10%,var(--surface-2))] text-left border-b border-[var(--color-line)] last:border-0 transition-colors disabled:opacity-50"
+                     >
+                        <div className="bg-[var(--surface-0)] rounded-full p-2 border border-[var(--color-line)]">
+                           <UserCircle className="w-4 h-4 text-[var(--color-accent)]" />
+                        </div>
+                        <div>
+                           <p className="text-xs font-bold text-[var(--color-ink)]">{u.email}</p>
+                           <p className="text-[10px] text-[var(--color-muted)] uppercase tracking-wider">{u.fullName}</p>
+                        </div>
+                     </button>
+                  ))
+               )}
+            </div>
+         </div>
+      )}
     </div>
   );
 }

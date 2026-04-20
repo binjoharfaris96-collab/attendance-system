@@ -352,6 +352,22 @@ export async function ensureDatabaseReady() {
     try { await db.execute(`ALTER TABLE ${table} ADD COLUMN building_id TEXT`); } catch (e) {}
   }
 
+  // Feature expansion: Parents & Linking (migration)
+  try { await db.execute(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE buildings ADD COLUMN grades TEXT`); } catch (e) {}
+  
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS parent_student_requests (
+      id TEXT PRIMARY KEY,
+      parent_id TEXT NOT NULL,
+      student_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(parent_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    )
+  `);
+
   await db.execute("CREATE INDEX IF NOT EXISTS idx_attendance_events_student ON attendance_events(student_id, captured_at DESC)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_attendance_events_date ON attendance_events(attendance_date, captured_at DESC)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_misbehavior_student ON misbehavior_reports(student_id, reported_at DESC)");
@@ -401,6 +417,7 @@ export type DbUser = {
   createdAt: string;
   updatedAt: string;
   buildingId: string | null;
+  phone: string | null;
 };
 
 export async function getUserByEmail(email: string): Promise<DbUser | null> {
@@ -410,7 +427,7 @@ export async function getUserByEmail(email: string): Promise<DbUser | null> {
       SELECT
         id, email, password_hash AS passwordHash, full_name AS fullName,
         role, created_at AS createdAt, updated_at AS updatedAt,
-        building_id AS buildingId
+        building_id AS buildingId, phone
       FROM users
       WHERE email = :email
       LIMIT 1
@@ -429,7 +446,21 @@ export async function getUserByEmail(email: string): Promise<DbUser | null> {
     createdAt: String(row.createdAt),
     updatedAt: String(row.updatedAt),
     buildingId: row.buildingId ? String(row.buildingId) : null,
+    phone: row.phone ? String(row.phone) : null,
   };
+}
+
+export async function updateUserRoleAndPhone(userId: string, role: string, phone: string | null) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE users SET role = :role, phone = :phone, updated_at = :now WHERE id = :id`,
+    args: {
+      role,
+      phone: phone || null,
+      now: isoNow(),
+      id: userId
+    }
+  });
 }
 
 export async function createUser(input: {
@@ -438,6 +469,7 @@ export async function createUser(input: {
   fullName: string;
   role?: string;
   buildingId?: string | null;
+  phone?: string | null;
 }) {
   const database = await ensureDatabaseReady();
   const now = isoNow();
@@ -445,8 +477,8 @@ export async function createUser(input: {
 
   await database.execute({
     sql: `
-      INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at, building_id)
-      VALUES (:id, :email, :passwordHash, :fullName, :role, :now, :now, :buildingId)
+      INSERT INTO users (id, email, password_hash, full_name, role, created_at, updated_at, building_id, phone)
+      VALUES (:id, :email, :passwordHash, :fullName, :role, :now, :now, :buildingId, :phone)
     `,
     args: {
       id,
@@ -456,6 +488,7 @@ export async function createUser(input: {
       role: input.role || "admin",
       now,
       buildingId: input.buildingId ?? null,
+      phone: input.phone ?? null,
     },
   });
 
@@ -468,6 +501,7 @@ export async function createUser(input: {
     createdAt: now,
     updatedAt: now,
     buildingId: input.buildingId || null,
+    phone: input.phone || null,
   };
 }
 
@@ -996,13 +1030,22 @@ export async function saveWeeklySchedulesForClass(classId: string, schedules: an
 export async function listBuildings() {
   const database = await ensureDatabaseReady();
   const rs = await database.execute(`SELECT * FROM buildings ORDER BY name ASC`);
-  return rs.rows.map(r => ({ id: String(r.id), name: String(r.name), address: r.address ? String(r.address) : null, createdAt: String(r.created_at) }));
+  return rs.rows.map(r => ({ 
+    id: String(r.id), 
+    name: String(r.name), 
+    address: r.address ? String(r.address) : null, 
+    grades: r.grades ? String(r.grades) : null,
+    createdAt: String(r.created_at) 
+  }));
 }
 
-export async function createBuilding(data: { name: string; address?: string }) {
+export async function createBuilding(data: { name: string; address?: string; grades?: string }) {
   const database = await ensureDatabaseReady();
   const id = randomUUID();
-  await database.execute({ sql: `INSERT INTO buildings (id, name, address, created_at) VALUES (?, ?, ?, ?)`, args: [id, data.name, data.address || null, isoNow()] });
+  await database.execute({ 
+    sql: `INSERT INTO buildings (id, name, address, grades, created_at) VALUES (?, ?, ?, ?, ?)`, 
+    args: [id, data.name, data.address || null, data.grades || null, isoNow()] 
+  });
   return id;
 }
 
@@ -1594,4 +1637,81 @@ export async function getSchoolwideStats(bid?: string | null) {
     classPerformance,
     trends
   };
+}
+
+// -------------------------------------------------------------
+// Parent-Child Workflows
+// -------------------------------------------------------------
+
+export async function createParentStudentRequest(parentId: string, studentId: string) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  const now = isoNow();
+  await database.execute({
+    sql: `INSERT INTO parent_student_requests (id, parent_id, student_id, status, created_at) VALUES (?, ?, ?, 'pending', ?)`,
+    args: [id, parentId, studentId, now]
+  });
+}
+
+export async function listParentRequestsForStudent(studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `SELECT p.id as requestId, u.id as parentUserId, u.full_name as parentName, u.email as parentEmail, u.phone as parentPhone, p.status, p.created_at as createdAt 
+          FROM parent_student_requests p 
+          JOIN users u ON u.id = p.parent_id 
+          WHERE p.student_id = ?`,
+    args: [studentId]
+  });
+  return rs.rows.map(r => ({
+    id: String(r.requestId),
+    parentUserId: String(r.parentUserId),
+    parentName: String(r.parentName),
+    parentEmail: String(r.parentEmail),
+    parentPhone: r.parentPhone ? String(r.parentPhone) : null,
+    status: String(r.status),
+    createdAt: String(r.createdAt)
+  }));
+}
+
+export async function getStudentApprovedParents(studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `SELECT u.full_name as parentName, u.phone as parentPhone, u.email as parentEmail
+          FROM parent_student_requests p
+          JOIN users u ON u.id = p.parent_id
+          WHERE p.student_id = ? AND p.status = 'approved'`,
+    args: [studentId]
+  });
+  return rs.rows.map(r => ({
+    name: String(r.parentName),
+    phone: r.parentPhone ? String(r.parentPhone) : null,
+    email: String(r.parentEmail)
+  }));
+}
+
+export async function listParentRequestsForParent(parentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `SELECT p.id as requestId, s.id as studentId, s.full_name as studentName, s.student_code as studentCode, p.status, p.created_at as createdAt 
+          FROM parent_student_requests p 
+          JOIN students s ON s.id = p.student_id 
+          WHERE p.parent_id = ?`,
+    args: [parentId]
+  });
+  return rs.rows.map(r => ({
+    id: String(r.requestId),
+    studentId: String(r.studentId),
+    studentName: String(r.studentName),
+    studentCode: String(r.studentCode),
+    status: String(r.status),
+    createdAt: String(r.createdAt)
+  }));
+}
+
+export async function updateParentRequestStatus(requestId: string, status: 'approved' | 'rejected') {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE parent_student_requests SET status = ? WHERE id = ?`,
+    args: [status, requestId]
+  });
 }

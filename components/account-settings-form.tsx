@@ -6,13 +6,16 @@ import { t, type AppLanguage } from "@/lib/i18n";
 
 export function AccountSettingsForm({
   initialUsername,
+  initialPhone = "",
   lang = "en",
 }: {
   initialUsername: string;
+  initialPhone?: string;
   lang?: AppLanguage;
 }) {
   const [activeLang, setActiveLang] = useState<AppLanguage>(lang);
   const [username, setUsername] = useState(initialUsername);
+  const [phone, setPhone] = useState(initialPhone);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -46,6 +49,7 @@ export function AccountSettingsForm({
     formData.set("currentPassword", currentPassword);
     formData.set("newPassword", newPassword);
     formData.set("confirmPassword", confirmPassword);
+    formData.set("phone", phone);
 
     startTransition(async () => {
       const result = await updateAccountCredentialsAction(formData);
@@ -79,6 +83,19 @@ export function AccountSettingsForm({
           className="field-input"
           placeholder={t("account.usernamePlaceholder", activeLang)}
           required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-[var(--color-ink)] mb-1">
+          {activeLang === "ar" ? "رقم الهاتف" : "Phone Number"}
+        </label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          className="field-input"
+          placeholder={activeLang === "ar" ? "مثال: 0501234567" : "e.g. 0501234567"}
         />
       </div>
 
