@@ -49,15 +49,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=config", request.url));
   }
 
-  // Standardized redirect_uri calculation (must match authorization step exactly)
+  // Use the current origin for the redirect URI (must match the authorization step exactly)
   const origin = request.nextUrl.origin;
-  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-  
-  const baseUrl = isLocalhost 
-    ? origin 
-    : (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin));
-
-  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
+  const redirectUri = `${origin.replace(/\/$/, "")}/api/auth/callback/google`;
 
   try {
     // Exchange authorization code for access token

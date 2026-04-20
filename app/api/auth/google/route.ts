@@ -19,15 +19,10 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine the callback URL — use request origin for localhost, NEXTAUTH_URL for production
-  // Robust redirect_uri calculation
+  // Use the current origin for the redirect URI. 
+  // This ensures that the state cookie (CSRF) is always available on the same domain.
   const origin = request.nextUrl.origin;
-  const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-  
-  const baseUrl = isLocalhost 
-    ? origin 
-    : (process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : origin));
-
-  const redirectUri = `${baseUrl.replace(/\/$/, "")}/api/auth/callback/google`;
+  const redirectUri = `${origin.replace(/\/$/, "")}/api/auth/callback/google`;
 
   // Generate a CSRF state token and store it in a cookie
   const state = randomUUID();
