@@ -46,6 +46,16 @@ export function AnnouncementForm() {
           <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Content</label>
           <textarea name="content" required className="input w-full min-h-[120px]" placeholder="Write your message here..." />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Attachment URL</label>
+            <input name="attachmentUrl" className="input w-full" placeholder="https://..." />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-[var(--color-muted)] uppercase tracking-wider">Attachment Name</label>
+            <input name="attachmentName" className="input w-full" placeholder="e.g. Schedule PDF" />
+          </div>
+        </div>
         {error && <p className="text-xs text-red-600">{error}</p>}
         <button 
           type="submit" 

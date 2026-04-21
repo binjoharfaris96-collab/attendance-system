@@ -147,6 +147,10 @@ function mapAnnouncement(row: Record<string, unknown>): Announcement {
     content: String(row.content),
     targetRole: String(row.targetRole ?? row.target_role ?? "all"),
     createdAt: String(row.createdAt ?? row.created_at),
+    attachmentUrl: row.attachmentUrl ?? row.attachment_url ? String(row.attachmentUrl ?? row.attachment_url) : null,
+    attachmentName: row.attachmentName ?? row.attachment_name ? String(row.attachmentName ?? row.attachment_name) : null,
+    authorName: row.authorName ? String(row.authorName) : null,
+    authorPhoto: row.authorPhoto ? String(row.authorPhoto) : null,
   };
 }
 
@@ -287,6 +291,10 @@ export async function ensureDatabaseReady() {
     )
   `);
 
+  // Extra migrations for authorship and profile photos
+  try { await db.execute("ALTER TABLE users ADD COLUMN photo_url TEXT"); } catch(e) {}
+  try { await db.execute("ALTER TABLE announcements ADD COLUMN author_id TEXT"); } catch(e) {}
+
   await db.execute(`
     CREATE TABLE IF NOT EXISTS announcements (
       id TEXT PRIMARY KEY,
@@ -295,7 +303,13 @@ export async function ensureDatabaseReady() {
       target_role TEXT NOT NULL DEFAULT 'all',
       created_at TEXT NOT NULL,
       building_id TEXT,
-      FOREIGN KEY(building_id) REFERENCES buildings(id) ON DELETE SET NULL
+      author_id TEXT,
+      attachment_url TEXT,
+      attachment_name TEXT,
+      attachment_type TEXT,
+      scheduled_at TEXT,
+      FOREIGN KEY(building_id) REFERENCES buildings(id) ON DELETE SET NULL,
+      FOREIGN KEY(author_id) REFERENCES users(id) ON DELETE SET NULL
     )
   `);
 
@@ -922,23 +936,39 @@ export async function listExcuses(limit = 50, buildingId?: string | null) {
 // Announcements
 // -------------------------------------------------------------
 
-export async function createAnnouncement(title: string, content: string, targetRole: string, buildingId?: string | null) {
+export async function createAnnouncement(
+  title: string, 
+  content: string, 
+  targetRole: string, 
+  buildingId?: string | null,
+  attachmentUrl?: string | null,
+  attachmentName?: string | null,
+  attachmentType?: string | null,
+  scheduledAt?: string | null,
+  authorId?: string | null
+) {
   const database = await ensureDatabaseReady();
   const id = randomUUID();
   const now = isoNow();
   await database.execute({
-    sql: `INSERT INTO announcements (id, title, content, target_role, created_at, building_id) VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [id, title, content, targetRole, now, buildingId || null]
+    sql: `INSERT INTO announcements (id, title, content, target_role, created_at, building_id, attachment_url, attachment_name, attachment_type, scheduled_at, author_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, title, content, targetRole, now, buildingId || null, attachmentUrl || null, attachmentName || null, attachmentType || null, scheduledAt || null, authorId || null]
   });
   return id;
 }
 
 export async function getLatestAnnouncements(role: string, limit: number, buildingId?: string | null) {
   const database = await ensureDatabaseReady();
-  let sql = `SELECT * FROM announcements WHERE (target_role = 'all' OR target_role = :role) `;
+  let sql = `
+    SELECT a.*, u.full_name AS authorName, u.photo_url AS authorPhoto
+    FROM announcements a
+    LEFT JOIN users u ON a.author_id = u.id
+    WHERE (a.target_role = 'all' OR a.target_role = :role) 
+    AND (a.scheduled_at IS NULL OR a.scheduled_at <= datetime('now')) 
+  `;
   const args: any = { role, limit };
-  if (buildingId) { sql += ` AND building_id = :bid `; args.bid = buildingId; }
-  sql += ` ORDER BY created_at DESC LIMIT :limit `;
+  if (buildingId) { sql += ` AND (a.building_id = :bid OR a.building_id IS NULL) `; args.bid = buildingId; }
+  sql += ` ORDER BY a.created_at DESC LIMIT :limit `;
   const rs = await database.execute({ sql, args });
   return rs.rows.map(row => mapAnnouncement(row as any));
 }
@@ -1210,11 +1240,22 @@ export async function createSchedule(data: { classId: string; teacherId: string;
   return id;
 }
 
-export async function insertAssignment(classId: string, title: string, description: string, dueDate: string) {
+export async function insertAssignment(
+  classId: string, 
+  title: string, 
+  description: string, 
+  dueDate: string,
+  topic?: string | null,
+  type?: string | null,
+  points?: number | null,
+  attachmentUrl?: string | null,
+  attachmentName?: string | null,
+  scheduledAt?: string | null
+) {
   const database = await ensureDatabaseReady();
   await database.execute({
-    sql: `INSERT INTO assignments (id, class_id, title, description, due_date, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [randomUUID(), classId, title, description, dueDate, isoNow()]
+    sql: `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, topic, assignment_type, points, attachment_url, attachment_name, scheduled_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [randomUUID(), classId, title, description, dueDate, isoNow(), topic || null, type || "assignment", points ?? 100, attachmentUrl || null, attachmentName || null, scheduledAt || null]
   });
 }
 
@@ -1536,7 +1577,7 @@ export async function getStudentAssignments(studentId: string) {
       JOIN class_students cs ON cs.class_id = c.id 
       LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = cs.student_id
       LEFT JOIN grades g ON g.submission_id = s.id
-      WHERE cs.student_id = ?
+      WHERE cs.student_id = ? AND (a.scheduled_at IS NULL OR a.scheduled_at <= datetime('now'))
       ORDER BY a.due_date ASC
     `,
     args: [studentId]
@@ -1548,7 +1589,13 @@ export async function getStudentAssignments(studentId: string) {
     dueDate: String(r.due_date),
     className: String(r.className),
     status: String(r.status),
-    score: r.score !== null ? Number(r.score) : null
+    score: r.score !== null ? Number(r.score) : null,
+    topic: r.topic ? String(r.topic) : null,
+    type: r.assignment_type ? String(r.assignment_type) : "assignment",
+    points: r.points !== null ? Number(r.points) : 100,
+    attachmentUrl: r.attachment_url ? String(r.attachment_url) : null,
+    attachmentName: r.attachment_name ? String(r.attachment_name) : null,
+    scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null
   }));
 }
 
@@ -1577,7 +1624,13 @@ export async function getTeacherAssignments(teacherId: string) {
     dueDate: String(r.due_date),
     className: String(r.className),
     totalStudents: Number(r.totalStudents || 0),
-    submittedCount: Number(r.submittedCount || 0)
+    submittedCount: Number(r.submittedCount || 0),
+    topic: r.topic ? String(r.topic) : null,
+    type: r.assignment_type ? String(r.assignment_type) : "assignment",
+    points: r.points !== null ? Number(r.points) : 100,
+    attachmentUrl: r.attachment_url ? String(r.attachment_url) : null,
+    attachmentName: r.attachment_name ? String(r.attachment_name) : null,
+    scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null
   }));
 }
 
@@ -1723,4 +1776,75 @@ export async function updateParentRequestStatus(requestId: string, status: 'appr
     sql: `UPDATE parent_student_requests SET status = ? WHERE id = ?`,
     args: [status, requestId]
   });
+}
+
+export async function getStudentTeachers(studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT t.full_name as fullName, c.name as className, c.subject
+      FROM teachers t
+      JOIN classes c ON c.teacher_id = t.id
+      JOIN class_students cs ON cs.class_id = c.id
+      WHERE cs.student_id = ?
+    `,
+    args: [studentId]
+  });
+  return rs.rows.map(r => ({
+    fullName: String(r.fullName),
+    className: String(r.className),
+    subject: r.subject ? String(r.subject) : "General"
+  }));
+}
+
+export async function insertAnnouncement(input: {
+  title: string;
+  content: string;
+  targetRole: string;
+  buildingId: string | null;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
+  scheduledAt?: string | null;
+}) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  await database.execute({
+    sql: `INSERT INTO announcements (id, title, content, target_role, building_id, attachment_url, attachment_name, attachment_type, scheduled_at, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, input.title, input.content, input.targetRole, input.buildingId, input.attachmentUrl || null, input.attachmentName || null, input.attachmentType || null, input.scheduledAt || null, isoNow()]
+  });
+  return id;
+}
+
+export async function getBuildingAdmins(buildingId: string | null) {
+  const database = await ensureDatabaseReady();
+  let sql = `SELECT full_name as fullName, email FROM users WHERE role IN ('admin', 'owner')`;
+  const args: any = [];
+  if (buildingId) {
+    sql += ` AND (building_id = ? OR role = 'owner')`;
+    args.push(buildingId);
+  } else {
+    sql += ` AND role = 'owner'`;
+  }
+  const rs = await database.execute({ sql, args });
+  return rs.rows.map(r => ({
+    fullName: String(r.fullName),
+    email: String(r.email)
+  }));
+}
+
+export async function getLatestAnnouncementsForRole(role: string, buildingId: string | null, limit = 20) {
+  const database = await ensureDatabaseReady();
+  let sql = `SELECT * FROM announcements WHERE (target_role = ? OR target_role = 'all') AND (scheduled_at IS NULL OR scheduled_at <= datetime('now'))`;
+  const args: any = [role];
+  if (buildingId) {
+    sql += ` AND (building_id = ? OR building_id IS NULL)`;
+    args.push(buildingId);
+  }
+  sql += ` ORDER BY created_at DESC LIMIT ?`;
+  args.push(limit);
+  
+  const rs = await database.execute({ sql, args });
+  return rs.rows.map(row => mapAnnouncement(row as any));
 }

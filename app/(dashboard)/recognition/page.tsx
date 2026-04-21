@@ -2,7 +2,9 @@ import { CameraTestPanel } from "@/components/camera-test-panel";
 import { getSetting, listStudents } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+import { requireAdminRole } from "@/lib/auth";
 export default async function RecognitionPage() {
+  await requireAdminRole();
   const allStudents = await listStudents();
   const unknownFaceAlertsEnabled =
     (await getSetting("alerts_unknown_face_enabled", "true")) === "true";

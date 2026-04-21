@@ -1,14 +1,16 @@
 import { requireSession } from "@/lib/auth";
 import { getUserByEmail, getTeacherByUserId, getTeacherClasses, getTeacherAssignments, getTeacherSchedules } from "@/lib/db";
-import { AlertCircle, CheckCircle2, GraduationCap, CopyCheck, Users, Clock, Calendar } from "lucide-react";
-import { AnnouncementFeed } from "@/components/announcement-feed";
+import { AlertCircle, GraduationCap, CopyCheck, Calendar } from "lucide-react";
+import { ProfileCard } from "@/components/profile-card";
 import Link from "next/link";
 
 export default async function TeacherPortalPage() {
   const session = await requireSession();
   
   const user = await getUserByEmail(session.email);
-  const teacherProfile = user ? await getTeacherByUserId(user.id) : null;
+  if (!user) return null; // Should not happen with session
+
+  const teacherProfile = await getTeacherByUserId(user.id);
 
   if (!teacherProfile) {
     return (
@@ -37,25 +39,16 @@ export default async function TeacherPortalPage() {
   const todayName = days[new Date().getDay()];
   const todaySchedules = allSchedules.filter(s => s.dayOfWeek === todayName);
   
-  // Calculate raw number of submissions awaiting grading
   const totalSubmissions = assignments.reduce((acc, curr) => acc + curr.submittedCount, 0);
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500">
-      <div className="flex items-center space-x-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[var(--color-accent)] to-purple-600 flex items-center justify-center text-white text-xl font-bold uppercase shadow-sm">
-          {teacherProfile.fullName.charAt(0)}
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--color-ink)] flex items-center space-x-2">
-            <span>Welcome, {teacherProfile.fullName.split(' ')[0]}</span>
-            <CheckCircle2 className="w-6 h-6 text-[var(--color-accent)]" />
-          </h1>
-          <p className="text-[var(--color-muted)]">
-            Department: <span className="font-medium">{teacherProfile.department || "General"}</span>
-          </p>
-        </div>
-      </div>
+      <ProfileCard user={{ 
+        fullName: user.fullName, 
+        email: user.email, 
+        photoUrl: user.photo_url, 
+        role: "Instructor" 
+      }} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Classes Card */}

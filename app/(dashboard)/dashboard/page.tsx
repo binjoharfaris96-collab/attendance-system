@@ -9,10 +9,12 @@ import {
   listStudents,
   listBuildings,
 } from "@/lib/db";
-import { requireSession } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 import { formatDateTime, toAttendanceDate, isoNow } from "@/lib/time";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
+import { ProfileCard } from "@/components/profile-card";
+import { getUserByEmail } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +23,9 @@ interface PageProps {
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
+  const session = await requireAdminRole();
+
   try {
-    const session = await requireSession();
     const { bid: queryBid } = await searchParams;
     
     // Core logic: Owners can override their building view via query params
@@ -86,8 +89,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     return 0;
   }
 
+  const user = await getUserByEmail(session.email);
+  if (!user) return null;
+
   return (
     <div className="space-y-7">
+      <ProfileCard user={{ 
+        fullName: user.fullName, 
+        email: user.email, 
+        photoUrl: user.photo_url, 
+        role: session.role === "owner" ? "System Owner" : "Administrator" 
+      }} />
+
       {/* Header */}
       <div className="page-header">
         <div>

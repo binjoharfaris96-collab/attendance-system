@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 import { listStudents, listExcuses } from "@/lib/db";
 import { getAppLanguage } from "@/lib/i18n-server";
 import { createTranslator } from "@/lib/i18n";
@@ -8,7 +8,7 @@ import { revalidatePath } from "next/cache";
 import { formatDateTime } from "@/lib/time";
 
 export default async function ExcusesPage() {
-  const session = await requireSession();
+  const session = await requireAdminRole();
   const students = await listStudents(session.buildingId);
   const excuses = await listExcuses(50, session.buildingId);
   const lang = await getAppLanguage();

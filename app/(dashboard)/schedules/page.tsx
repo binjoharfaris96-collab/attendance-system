@@ -5,10 +5,10 @@ import { Calendar, Clock, Trash2, Plus, User, BookOpen } from "lucide-react";
 import { WeeklyGridBuilder } from "@/components/admin/weekly-grid-builder";
 import { deleteScheduleAction } from "@/app/actions/admin";
 import { DeleteButton } from "@/components/admin/delete-button";
-import { requireSession } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 
 export default async function SchedulesPage() {
-  const session = await requireSession();
+  const session = await requireAdminRole();
   const schedules = await listAllSchedules(session.buildingId);
   const classes = await listAllClasses(session.buildingId);
   const teachers = await listTeachers(session.buildingId);

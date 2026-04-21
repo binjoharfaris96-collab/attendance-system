@@ -47,7 +47,7 @@ export default async function SettingsPage() {
             initialUnknownFaceAlerts={unknownFaceAlerts}
             initialPhoneDetectionAlerts={phoneDetectionAlerts}
             initialBackupInterval={backupInterval}
-            isAdmin={session.role === "admin"}
+            isAdmin={session.role === "admin" || session.role === "owner"}
           />
         </div>
 
@@ -68,7 +68,7 @@ export default async function SettingsPage() {
             />
           </div>
 
-          {session.role === "admin" && (
+          {(session.role === "admin" || session.role === "owner") && (
             <div className="card">
               <BackupRestorePanel lang={appLanguage as AppLanguage} />
             </div>

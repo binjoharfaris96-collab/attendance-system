@@ -47,9 +47,10 @@ export default async function DashboardLayout({
   const session = await requireSession();
   console.log("DASHBOARD LOADED");
 
-  if (session.role === "parent") {
-    redirect("/parent");
-  }
+  const homeUrl = 
+    session.role === "student" ? "/student" :
+    session.role === "teacher" ? "/teacher" :
+    session.role === "parent" ? "/parent" : "/dashboard";
 
   let activeNavItems: any[] = [...navigationItems];
   if (session.role === "teacher") {
@@ -148,7 +149,7 @@ export default async function DashboardLayout({
       sidebar={
         <aside className="depth-panel flex h-full flex-col overflow-hidden p-3 text-[var(--sidebar-text)]">
           <Link
-            href="/dashboard"
+            href={homeUrl}
             className="inline-flex items-center gap-2 rounded-2xl border border-[var(--sidebar-border)] bg-[color-mix(in_srgb,var(--surface-1)_82%,transparent)] px-3 py-2"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent)]">
@@ -195,7 +196,7 @@ export default async function DashboardLayout({
 
             {secondaryNavigationItems
               .filter((item) => {
-                if (session.role !== "admin") {
+                if (session.role !== "admin" && session.role !== "owner") {
                   // Non-admins can only see Announcements and Behavior (if they are a teacher)
                   if (item.href === "/announcements") return true;
                   if (session.role === "teacher" && item.href === "/behavior") return true;

@@ -106,4 +106,7 @@ export type Announcement = {
   content: string;
   targetRole: string;
   createdAt: string;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
 };

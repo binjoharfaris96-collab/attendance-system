@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 export default async function LinksDashboardPage() {
   const session = await requireSession();
   
-  // Hard security wall
-  if (session.role !== "admin") {
+  // Security check: Only admins and the owner can manage identity links
+  if (session.role !== "admin" && session.role !== "owner") {
     return (
       <div className="p-8 text-center text-red-600 font-bold border rounded-lg bg-red-50">
         Access Denied. You lack physiological clearance for Identity Management.

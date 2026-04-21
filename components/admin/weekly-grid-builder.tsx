@@ -74,19 +74,24 @@ export function WeeklyGridBuilder({
     const payloadSchedules: any[] = [];
 
     for (const day of DAYS) {
-      periods.forEach((period, pIndex) => {
-        const key = `${day}-${pIndex}`;
-        const cell = cells[key];
-        if (cell && cell.teacherId && cell.subject.trim()) {
+      for (let pIndex = 0; pIndex < periods.length; pIndex++) {
+        const period = periods[pIndex];
+        const cell = cells[`${day}-${pIndex}`];
+        
+        // Defensive check: Ensure cell and subject exist and subject is a non-empty string after trim
+        const subject = cell?.subject;
+        const teacherId = cell?.teacherId;
+        
+        if (teacherId && typeof subject === 'string' && subject.trim()) {
           payloadSchedules.push({
-            teacherId: cell.teacherId,
-            subject: cell.subject.trim(),
+            teacherId,
+            subject: subject.trim(),
             dayOfWeek: day,
             startTime: period.startTime,
             endTime: period.endTime,
           });
         }
-      });
+      }
     }
 
     if (payloadSchedules.length === 0) {
@@ -111,7 +116,7 @@ export function WeeklyGridBuilder({
   return (
     <div className="space-y-8">
       {/* Header & Class Picker */}
-      <div className="card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-300">
+      <div className="card p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 hover:translate-y-0">
         <div className="flex-1 space-y-3">
           <label className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-widest flex items-center gap-2 px-1">
             <Calendar className="w-4 h-4 text-[var(--color-accent)]" />
@@ -169,30 +174,29 @@ export function WeeklyGridBuilder({
 
       {/* 7-Day Grid */}
       {selectedClassId ? (
-        <div className="bg-[var(--surface-1)] rounded-3xl border border-[var(--color-line)] shadow-2xl overflow-hidden transition-all duration-500 animate-in fade-in zoom-in-95">
+        <div className="bg-[var(--surface-1)] rounded-3xl border border-[var(--color-line)] shadow-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse table-fixed">
               <thead>
                 <tr className="bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] border-b border-[var(--color-line)]">
-                  <th className="p-4 w-[160px] text-center border-r border-[var(--color-line)] bg-[var(--surface-1)] sticky left-0 z-10">
+                  <th className="p-4 w-[120px] text-center border-r border-[var(--color-line)] bg-[var(--surface-1)] sticky left-0 z-10">
                     <div className="flex flex-col items-center justify-center opacity-40">
-                      <Clock className="w-6 h-6 mb-1" />
+                      <Clock className="w-5 h-5 mb-1" />
                       <span className="text-[10px] font-black uppercase tracking-tighter">Timeline</span>
                     </div>
                   </th>
                   {DAYS.map(day => (
-                    <th key={day} className="p-5 text-center min-w-[180px] border-r border-[var(--color-line)]">
+                    <th key={day} className="p-4 text-center w-[160px] border-r border-[var(--color-line)]">
                       <span className="text-sm font-black text-[var(--color-ink)] uppercase tracking-widest block">{day}</span>
-                      <span className="text-[10px] text-[var(--color-muted)] font-bold uppercase tracking-tighter">Regular Slot</span>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-line)]">
                 {periods.map((period, pIndex) => (
-                  <tr key={pIndex} className="group hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)] transition-colors">
+                  <tr key={pIndex} className="group border-b border-[var(--color-line)]">
                     {/* Period Row Header */}
-                    <td className="p-4 border-r border-[var(--color-line)] sticky left-0 bg-[var(--surface-1)] z-10 shadow-lg md:shadow-none transition-shadow">
+                    <td className="p-3 border-r border-[var(--color-line)] sticky left-0 bg-[var(--surface-1)] z-10">
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between px-1">
                           <span className="text-[10px] font-black text-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_14%,transparent)] border border-[color-mix(in_srgb,var(--color-accent)_25%,transparent)] px-1.5 py-0.5 rounded uppercase">Period {pIndex + 1}</span>
@@ -224,10 +228,9 @@ export function WeeklyGridBuilder({
                     {DAYS.map(day => {
                       const key = `${day}-${pIndex}`;
                       const cell = cells[key] || { teacherId: "", subject: "" };
-                      const hasData = cell.teacherId && cell.subject;
 
                       return (
-                        <td key={key} className={`p-3 border-r border-[var(--color-line)] align-top transition-all duration-300 focus-within:bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)] ${hasData ? 'bg-[color-mix(in_srgb,var(--color-green)_8%,transparent)]' : ''}`}>
+                        <td key={key} className="p-2 border-r border-[var(--color-line)] align-top bg-[var(--surface-1)]">
                           <div className="flex flex-col gap-2 h-full">
                             <input 
                               type="text" 

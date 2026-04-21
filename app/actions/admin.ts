@@ -53,16 +53,30 @@ export async function linkUserToTeacherAction(formData: FormData) {
 
 export async function createAnnouncementAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner" && session.role !== "teacher") return { error: "Access denied" };
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const targetRole = formData.get("targetRole") as string;
+  const attachmentUrl = formData.get("attachmentUrl") as string;
+  const attachmentName = formData.get("attachmentName") as string;
+  const scheduledAtParam = formData.get("scheduledAt") as string;
 
   if (!title || !content) return { error: "Missing fields" };
 
   try {
-    await createAnnouncement(title, content, targetRole || "all", session.buildingId);
+    const scheduledAt = scheduledAtParam ? new Date(scheduledAtParam).toISOString() : null;
+    await createAnnouncement(
+      title, 
+      content, 
+      targetRole || "all", 
+      session.buildingId,
+      attachmentUrl,
+      attachmentName,
+      null, // attachmentType
+      scheduledAt,
+      user.id
+    );
     revalidatePath("/student");
     revalidatePath("/teacher");
     revalidatePath("/dashboard/announcements");

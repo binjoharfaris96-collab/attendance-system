@@ -3,10 +3,10 @@ import { listRecentAttendance, listStudents } from "@/lib/db";
 import { toAttendanceDate } from "@/lib/time";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage } from "@/lib/i18n-server";
-import { requireSession } from "@/lib/auth";
+import { requireAdminRole } from "@/lib/auth";
 
 export default async function AttendancePage() {
-  const session = await requireSession();
+  const session = await requireAdminRole();
   const attendance = await listRecentAttendance(50, session.buildingId);
   const students = await listStudents(session.buildingId);
   const today = toAttendanceDate(new Date().toISOString());

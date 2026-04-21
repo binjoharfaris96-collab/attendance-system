@@ -343,3 +343,13 @@ export async function requireSession() {
 
   return session;
 }
+export async function requireAdminRole() {
+  const session = await requireSession();
+  if (session.role === "parent") {
+    redirect("/parent");
+  }
+  if (session.role === "student") {
+    redirect("/student");
+  }
+  return session;
+}

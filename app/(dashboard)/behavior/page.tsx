@@ -42,7 +42,7 @@ export default async function BehaviorPage() {
         </div>
       </div>
 
-      <div className={`grid gap-6 ${session.role === "admin" ? "lg:grid-cols-[420px_1fr]" : "max-w-2xl mx-auto"}`}>
+      <div className={`grid gap-6 ${(session.role === "admin" || session.role === "owner") ? "lg:grid-cols-[420px_1fr]" : "max-w-2xl mx-auto"}`}>
         <div className="card h-fit">
           <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-4">
             {t("behavior.reportMisbehavior")}
@@ -50,7 +50,7 @@ export default async function BehaviorPage() {
           <MisbehaviorForm students={students} lang={lang} />
         </div>
 
-        {session.role === "admin" && (
+        {(session.role === "admin" || session.role === "owner") && (
           <div className="card">
           <h3 className="text-lg font-semibold text-[var(--color-ink)] mb-4">
             {t("behavior.recentReports")}

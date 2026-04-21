@@ -27,9 +27,9 @@ export default async function AnnouncementsPage() {
         </div>
       </div>
 
-        <div className={`grid gap-6 ${(session.role === "admin" || session.role === "owner") ? "md:grid-cols-3" : "max-w-4xl"}`}>
-          {/* Create Form (Admin/Owner) */}
-          {(session.role === "admin" || session.role === "owner") && <AnnouncementForm />}
+        <div className={`grid gap-6 ${(session.role === "admin" || session.role === "owner" || session.role === "teacher") ? "md:grid-cols-3" : "max-w-4xl"}`}>
+          {/* Create Form (Admin/Owner/Teacher) */}
+          {(session.role === "admin" || session.role === "owner" || session.role === "teacher") && <AnnouncementForm />}
 
         {/* List of Announcements */}
         <div className="md:col-span-2 space-y-4">
