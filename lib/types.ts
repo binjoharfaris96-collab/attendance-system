@@ -109,4 +109,6 @@ export type Announcement = {
   attachmentUrl?: string | null;
   attachmentName?: string | null;
   attachmentType?: string | null;
+  authorName?: string | null;
+  authorPhoto?: string | null;
 };
