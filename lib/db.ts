@@ -441,6 +441,7 @@ export type DbUser = {
   updatedAt: string;
   buildingId: string | null;
   phone: string | null;
+  photo_url: string | null;
 };
 
 export async function getUserByEmail(email: string): Promise<DbUser | null> {
@@ -450,7 +451,7 @@ export async function getUserByEmail(email: string): Promise<DbUser | null> {
       SELECT
         id, email, password_hash AS passwordHash, full_name AS fullName,
         role, created_at AS createdAt, updated_at AS updatedAt,
-        building_id AS buildingId, phone
+        building_id AS buildingId, phone, photo_url
       FROM users
       WHERE email = :email
       LIMIT 1
@@ -470,6 +471,7 @@ export async function getUserByEmail(email: string): Promise<DbUser | null> {
     updatedAt: String(row.updatedAt),
     buildingId: row.buildingId ? String(row.buildingId) : null,
     phone: row.phone ? String(row.phone) : null,
+    photo_url: row.photo_url ? String(row.photo_url) : null,
   };
 }
 
