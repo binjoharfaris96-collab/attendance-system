@@ -556,6 +556,35 @@ const translations: Record<string, Record<AppLanguage, string>> = {
   "buildings.assign": { en: "Assign", ar: "تعيين" },
   "buildings.delete": { en: "Delete", ar: "حذف" },
   "buildings.confirmDelete": { en: "Are you sure you want to delete this building?", ar: "هل أنت متأكد من حذف هذا المبنى؟" },
+  // LMS Submissions
+  "submissions.title": { en: "Assignment Submissions", ar: "تسليمات الواجب" },
+  "submissions.feedback": { en: "Teacher Feedback", ar: "ملاحظات المعلم" },
+  "submissions.score": { en: "Score", ar: "الدرجة" },
+  "submissions.graded": { en: "Graded", ar: "تم التقييم" },
+  "submissions.notSubmitted": { en: "Not Submitted", ar: "لم يتم التسليم" },
+  "submissions.submitted": { en: "Submitted", ar: "تم التسليم" },
+  "submissions.status": { en: "Submission Status", ar: "حالة التسليم" },
+  "submissions.submit": { en: "Submit Work", ar: "تسليم الواجب" },
+  "submissions.grading": { en: "Grade Submission", ar: "تقييم التسليم" },
+  "submissions.feedbackPlaceholder": { en: "Write constructive feedback...", ar: "اكتب ملاحظات بناءة..." },
+  "submissions.gradePlaceholder": { en: "Grade (e.g. 85)", ar: "الدرجة (مثال: 85)" },
+  "submissions.googleDrive": { en: "Google Drive / Docs", ar: "جوجل درايف / مستندات" },
+  "submissions.pasteGoogleLink": { en: "Paste Google Drive or Docs link", ar: "ألصق رابط جوجل درايف أو مستندات جوجل" },
+  "submissions.documentName": { en: "Document Name (optional)", ar: "اسم المستند (اختياري)" },
+  "submissions.invalidLink": { en: "Please enter a valid Google Drive or Google Docs URL.", ar: "يرجى إدخال رابط صالح لجوجل درايف أو مستندات جوجل." },
+  // Report Card
+  "reportCard.title": { en: "Student Report Card", ar: "بطاقة تقرير الطالب" },
+  "reportCard.subtitle": { en: "Academic & Attendance Statement", ar: "بيان الدرجات والحضور الدراسي" },
+  "reportCard.studentInfo": { en: "Student Information", ar: "معلومات الطالب" },
+  "reportCard.performanceSummary": { en: "Infraction & Metrics Summary", ar: "ملخص المخالفات والمقاييس" },
+  "reportCard.grade": { en: "Grade Rating", ar: "تقييم الدرجة" },
+  "reportCard.print": { en: "Print Report", ar: "طباعة التقرير" },
+  "reportCard.attendanceHistory": { en: "Attendance History", ar: "سجل الحضور" },
+  "reportCard.incidentHistory": { en: "Disciplinary Incidents", ar: "الحوادث السلوكية والانضباط" },
+  // Scanner Offline
+  "scanner.runningOffline": { en: "Offline Scanner Active", ar: "الماسح غير المتصل بالإنترنت نشط" },
+  "scanner.offlineSync": { en: "Syncing offline records...", ar: "مزامنة السجلات المحلية..." },
+  "scanner.offlineBanner": { en: "You are offline. Scans are saved locally and will sync once connected.", ar: "أنت غير متصل بالإنترنت. يتم حفظ عمليات المسح محليًا وستتم مزامنتها عند الاتصال." },
 };
 
 /**

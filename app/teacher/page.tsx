@@ -1,7 +1,8 @@
 import { requireSession } from "@/lib/auth";
 import { getUserByEmail, getTeacherByUserId, getTeacherClasses, getTeacherAssignments, getTeacherSchedules } from "@/lib/db";
-import { AlertCircle, GraduationCap, CopyCheck, Calendar } from "lucide-react";
+import { AlertCircle, GraduationCap, CopyCheck, Calendar, Clock } from "lucide-react";
 import { ProfileCard } from "@/components/profile-card";
+import { AnnouncementFeed } from "@/components/announcement-feed";
 import Link from "next/link";
 
 export default async function TeacherPortalPage() {

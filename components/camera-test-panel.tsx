@@ -6,7 +6,8 @@ import { t, type AppLanguage } from "@/lib/i18n";
 
 let faceapi: typeof faceapiType | null = null;
 
-import { checkInRecognizedFace } from "@/app/actions/recognition";
+import { checkInRecognizedFace, syncOfflineCheckInsAction } from "@/app/actions/recognition";
+import { saveOfflineCheckIn, getOfflineCheckIns, removeOfflineCheckIn } from "@/lib/offline";
 
 type RegisteredStudent = {
   studentCode: string;
@@ -90,6 +91,32 @@ export function CameraTestPanel({
     });
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    async function handleOnline() {
+      try {
+        const offlineCheckIns = await getOfflineCheckIns();
+        if (offlineCheckIns.length > 0) {
+          const result = await syncOfflineCheckInsAction(offlineCheckIns);
+          for (const item of offlineCheckIns) {
+            await removeOfflineCheckIn(item.id);
+          }
+          if (result.successCount > 0) {
+            setMessage(`Synced ${result.successCount} offline check-ins`);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to sync offline check-ins", e);
+      }
+    }
+
+    window.addEventListener("online", handleOnline);
+    if (navigator.onLine) {
+      handleOnline();
+    }
+
+    return () => window.removeEventListener("online", handleOnline);
   }, []);
 
   useEffect(() => {
@@ -239,27 +266,59 @@ export function CameraTestPanel({
     }
     
     recentCheckIns.current[studentCode] = now;
-    setMessage(`${student.fullName} - ${t("camera.recognizedCheckingIn", activeLang)}`);
 
-    const result = await checkInRecognizedFace(studentCode);
-    if (result.status === "created") {
-      let msg = `${student.fullName}: ${t("checkin.presentSuccess", activeLang)}`;
-      if (result.latesCount !== undefined && result.latesCount > 0) {
-        msg += ` (${t("checkin.latesTotal", activeLang)}: ${result.latesCount})`;
-      }
-      setMessage(msg);
-      // Optimistically update attendance count and lates count for the preview
+    if (!navigator.onLine) {
+      setMessage(`${student.fullName} - Saved offline`);
+      const offlineCheckIn = {
+        id: crypto.randomUUID(),
+        studentCode,
+        capturedAt: new Date().toISOString()
+      };
+      await saveOfflineCheckIn(offlineCheckIn);
       setMatchedStudent({ 
         ...student, 
         attendanceCount: student.attendanceCount + 1,
-        latesCount: result.latesCount ?? student.latesCount
+        latesCount: student.latesCount
       });
-    } else if (result.status === "duplicate") {
-      setMessage(`${student.fullName}: ${t("checkin.alreadyCheckedIn", activeLang)}`);
-    } else if (result.status === "rejected") {
-      setMessage(t("checkin.outsideWindow", activeLang));
-    } else {
-      setMessage(t("checkin.checkInFailed", activeLang));
+      return;
+    }
+
+    setMessage(`${student.fullName} - ${t("camera.recognizedCheckingIn", activeLang)}`);
+
+    try {
+      const result = await checkInRecognizedFace(studentCode);
+      if (result.status === "created") {
+        let msg = `${student.fullName}: ${t("checkin.presentSuccess", activeLang)}`;
+        if (result.latesCount !== undefined && result.latesCount > 0) {
+          msg += ` (${t("checkin.latesTotal", activeLang)}: ${result.latesCount})`;
+        }
+        setMessage(msg);
+        // Optimistically update attendance count and lates count for the preview
+        setMatchedStudent({ 
+          ...student, 
+          attendanceCount: student.attendanceCount + 1,
+          latesCount: result.latesCount ?? student.latesCount
+        });
+      } else if (result.status === "duplicate") {
+        setMessage(`${student.fullName}: ${t("checkin.alreadyCheckedIn", activeLang)}`);
+      } else if (result.status === "rejected") {
+        setMessage(t("checkin.outsideWindow", activeLang));
+      } else {
+        setMessage(t("checkin.checkInFailed", activeLang));
+      }
+    } catch (err) {
+      setMessage(`${student.fullName} - Network error, saved offline`);
+      const offlineCheckIn = {
+        id: crypto.randomUUID(),
+        studentCode,
+        capturedAt: new Date().toISOString()
+      };
+      await saveOfflineCheckIn(offlineCheckIn);
+      setMatchedStudent({ 
+        ...student, 
+        attendanceCount: student.attendanceCount + 1,
+        latesCount: student.latesCount
+      });
     }
   }
 

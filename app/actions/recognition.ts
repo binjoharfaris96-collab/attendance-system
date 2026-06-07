@@ -89,3 +89,43 @@ export async function clearPhoneDetectionsAction() {
     return false;
   }
 }
+
+export async function syncOfflineCheckInsAction(
+  checkIns: { studentCode: string; capturedAt: string }[]
+) {
+  await requireSession();
+  const { recordAttendanceByStudentCode } = await import("@/lib/db");
+
+  let successCount = 0;
+  let duplicateCount = 0;
+  let errorCount = 0;
+
+  for (const item of checkIns) {
+    try {
+      const result = await recordAttendanceByStudentCode({
+        studentCode: item.studentCode,
+        source: "facial_recognition_offline",
+        notes: "Synced from offline cache",
+        capturedAt: item.capturedAt
+      });
+      if (result.status === "created") {
+        successCount++;
+      } else if (result.status === "duplicate") {
+        duplicateCount++;
+      } else {
+        errorCount++;
+      }
+    } catch (err) {
+      console.error("Offline sync item failed:", err);
+      errorCount++;
+    }
+  }
+
+  if (successCount > 0) {
+    revalidatePath("/dashboard");
+    revalidatePath("/attendance");
+    revalidatePath("/statistics");
+  }
+
+  return { successCount, duplicateCount, errorCount };
+}

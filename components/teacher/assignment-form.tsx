@@ -3,12 +3,14 @@
 import { createAssignment } from "@/app/actions/assignments";
 import { CopyCheck, PlusCircle, Paperclip, Link as LinkIcon, FileUp, Image as ImageIcon, Camera, Video, FileText, File as FileIcon, Cloud, Clock } from "lucide-react";
 import { useState } from "react";
+import { GoogleDrivePicker } from "@/components/google-drive-picker";
 
 export function AssignmentForm({ classes }: { classes: any[] }) {
   const [isPending, setIsPending] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [attachmentName, setAttachmentName] = useState("");
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
 
   const handleLink = (label: string) => {
     const url = window.prompt(`Enter the ${label} URL:`);
@@ -41,8 +43,8 @@ export function AssignmentForm({ classes }: { classes: any[] }) {
     { icon: <Camera className="w-4 h-4" />, label: "Take Photo", color: "text-pink-500", onClick: () => handleCapture("image/*", "environment") },
     { icon: <Video className="w-4 h-4" />, label: "Record Video", color: "text-red-500", onClick: () => handleCapture("video/*", "environment") },
     { icon: <FileText className="w-4 h-4" />, label: "New PDF", color: "text-orange-500", onClick: () => handleCapture("application/pdf") },
-    { icon: <FileIcon className="w-4 h-4" />, label: "New Docs", color: "text-indigo-500", onClick: () => handleLink("Google Doc") },
-    { icon: <Cloud className="w-4 h-4" />, label: "Add from Drive", color: "text-sky-500", onClick: () => handleLink("Google Drive") },
+    { icon: <FileIcon className="w-4 h-4" />, label: "New Docs", color: "text-indigo-500", onClick: () => setIsDrivePickerOpen(true) },
+    { icon: <Cloud className="w-4 h-4" />, label: "Add from Drive", color: "text-sky-500", onClick: () => setIsDrivePickerOpen(true) },
   ];
 
   return (
@@ -216,6 +218,16 @@ export function AssignmentForm({ classes }: { classes: any[] }) {
           </div>
         </form>
       )}
+
+      <GoogleDrivePicker 
+        isOpen={isDrivePickerOpen} 
+        onClose={() => setIsDrivePickerOpen(false)} 
+        onSelect={(url, name) => {
+          setAttachmentUrl(url);
+          setAttachmentName(name);
+        }} 
+        lang="en" 
+      />
     </div>
   );
 }

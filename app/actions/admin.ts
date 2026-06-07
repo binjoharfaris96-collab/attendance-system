@@ -55,6 +55,10 @@ export async function createAnnouncementAction(formData: FormData) {
   const session = await requireSession();
   if (session.role !== "admin" && session.role !== "owner" && session.role !== "teacher") return { error: "Access denied" };
 
+  const { getUserByEmail } = await import("@/lib/db");
+  const user = await getUserByEmail(session.email);
+  if (!user) return { error: "User not found" };
+
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const targetRole = formData.get("targetRole") as string;

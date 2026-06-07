@@ -356,8 +356,37 @@ export async function ensureDatabaseReady() {
       FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
     )
   `);
-  await db.execute(`CREATE TABLE IF NOT EXISTS assignments (id TEXT PRIMARY KEY, class_id TEXT NOT NULL, title TEXT NOT NULL, description TEXT, due_date TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, building_id TEXT)`);
-  await db.execute(`CREATE TABLE IF NOT EXISTS submissions (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, student_id TEXT NOT NULL, file_url TEXT, status TEXT NOT NULL, submitted_at TEXT NOT NULL, building_id TEXT)`);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS assignments (
+      id TEXT PRIMARY KEY, 
+      class_id TEXT NOT NULL, 
+      title TEXT NOT NULL, 
+      description TEXT, 
+      due_date TEXT NOT NULL, 
+      created_at TEXT NOT NULL, 
+      updated_at TEXT, 
+      building_id TEXT,
+      topic TEXT,
+      assignment_type TEXT DEFAULT 'assignment',
+      points INTEGER DEFAULT 100,
+      attachment_url TEXT,
+      attachment_name TEXT,
+      scheduled_at TEXT
+    )
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id TEXT PRIMARY KEY, 
+      assignment_id TEXT NOT NULL, 
+      student_id TEXT NOT NULL, 
+      file_url TEXT, 
+      attachment_name TEXT,
+      content TEXT,
+      status TEXT NOT NULL, 
+      submitted_at TEXT NOT NULL, 
+      building_id TEXT
+    )
+  `);
   await db.execute(`CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, submission_id TEXT NOT NULL UNIQUE, score REAL, feedback TEXT, graded_at TEXT NOT NULL, building_id TEXT)`);
 
   // Ensure building_id columns exist (migration)
@@ -365,6 +394,18 @@ export async function ensureDatabaseReady() {
   for (const table of tables) {
     try { await db.execute(`ALTER TABLE ${table} ADD COLUMN building_id TEXT`); } catch (e) {}
   }
+
+  // LMS migrations for existing tables
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN topic TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN assignment_type TEXT DEFAULT 'assignment'`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN points INTEGER DEFAULT 100`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN attachment_url TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN attachment_name TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN scheduled_at TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN updated_at TEXT`); } catch (e) {}
+
+  try { await db.execute(`ALTER TABLE submissions ADD COLUMN attachment_name TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE submissions ADD COLUMN content TEXT`); } catch (e) {}
 
   // Feature expansion: Parents & Linking (migration)
   try { await db.execute(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch (e) {}
@@ -527,6 +568,7 @@ export async function createUser(input: {
     updatedAt: now,
     buildingId: input.buildingId || null,
     phone: input.phone || null,
+    photo_url: null,
   };
 }
 
@@ -814,6 +856,7 @@ export async function recordAttendanceByStudentCode(input: {
   studentCode: string;
   notes?: string | null;
   source?: string;
+  capturedAt?: string;
 }) {
   const database = await ensureDatabaseReady();
   const studentCode = normalizeStudentCode(input.studentCode);
@@ -826,7 +869,7 @@ export async function recordAttendanceByStudentCode(input: {
   if (!studentRow) return { status: "missing" as const, message: `No student found for code ${studentCode}.` };
 
   const student = mapStudent(studentRow as unknown as Record<string, unknown>);
-  const capturedAt = isoNow();
+  const capturedAt = input.capturedAt || isoNow();
   const attendanceDate = toAttendanceDate(capturedAt);
 
   // Check duplicate
@@ -1808,13 +1851,14 @@ export async function insertAnnouncement(input: {
   attachmentName?: string | null;
   attachmentType?: string | null;
   scheduledAt?: string | null;
+  authorId?: string | null;
 }) {
   const database = await ensureDatabaseReady();
   const id = randomUUID();
   await database.execute({
-    sql: `INSERT INTO announcements (id, title, content, target_role, building_id, attachment_url, attachment_name, attachment_type, scheduled_at, created_at) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [id, input.title, input.content, input.targetRole, input.buildingId, input.attachmentUrl || null, input.attachmentName || null, input.attachmentType || null, input.scheduledAt || null, isoNow()]
+    sql: `INSERT INTO announcements (id, title, content, target_role, building_id, attachment_url, attachment_name, attachment_type, scheduled_at, created_at, author_id) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [id, input.title, input.content, input.targetRole, input.buildingId, input.attachmentUrl || null, input.attachmentName || null, input.attachmentType || null, input.scheduledAt || null, isoNow(), input.authorId || null]
   });
   return id;
 }
@@ -1849,4 +1893,162 @@ export async function getLatestAnnouncementsForRole(role: string, buildingId: st
   
   const rs = await database.execute({ sql, args });
   return rs.rows.map(row => mapAnnouncement(row as any));
+}
+
+export async function getAssignmentById(id: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT a.*, c.name as className 
+      FROM assignments a
+      JOIN classes c ON c.id = a.class_id
+      WHERE a.id = ? LIMIT 1
+    `,
+    args: [id]
+  });
+  const r = rs.rows[0];
+  return r ? {
+    id: String(r.id),
+    classId: String(r.class_id),
+    title: String(r.title),
+    description: r.description ? String(r.description) : null,
+    dueDate: String(r.due_date),
+    className: String(r.className),
+    createdAt: String(r.created_at),
+    topic: r.topic ? String(r.topic) : null,
+    type: r.assignment_type ? String(r.assignment_type) : "assignment",
+    points: r.points !== null ? Number(r.points) : 100,
+    attachmentUrl: r.attachment_url ? String(r.attachment_url) : null,
+    attachmentName: r.attachment_name ? String(r.attachment_name) : null,
+    scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null,
+    buildingId: r.building_id ? String(r.building_id) : null
+  } : null;
+}
+
+export async function insertSubmission(
+  assignmentId: string,
+  studentId: string,
+  fileUrl?: string | null,
+  attachmentName?: string | null,
+  content?: string | null,
+  buildingId?: string | null
+) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `SELECT id FROM submissions WHERE assignment_id = ? AND student_id = ? LIMIT 1`,
+    args: [assignmentId, studentId]
+  });
+  
+  if (rs.rows[0]) {
+    const submissionId = rs.rows[0].id;
+    await database.execute({
+      sql: `UPDATE submissions SET file_url = ?, attachment_name = ?, content = ?, status = 'Submitted', submitted_at = ? WHERE id = ?`,
+      args: [fileUrl || null, attachmentName || null, content || null, isoNow(), submissionId]
+    });
+    await database.execute({
+      sql: `DELETE FROM grades WHERE submission_id = ?`,
+      args: [submissionId]
+    });
+    return submissionId;
+  } else {
+    const id = randomUUID();
+    await database.execute({
+      sql: `INSERT INTO submissions (id, assignment_id, student_id, file_url, attachment_name, content, status, submitted_at, building_id) VALUES (?, ?, ?, ?, ?, ?, 'Submitted', ?, ?)`,
+      args: [id, assignmentId, studentId, fileUrl || null, attachmentName || null, content || null, isoNow(), buildingId || null]
+    });
+    return id;
+  }
+}
+
+export async function getSubmissionForStudent(assignmentId: string, studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT s.*, g.score, g.feedback, g.graded_at
+      FROM submissions s
+      LEFT JOIN grades g ON g.submission_id = s.id
+      WHERE s.assignment_id = ? AND s.student_id = ?
+      LIMIT 1
+    `,
+    args: [assignmentId, studentId]
+  });
+  const r = rs.rows[0];
+  return r ? {
+    id: String(r.id),
+    assignmentId: String(r.assignment_id),
+    studentId: String(r.student_id),
+    fileUrl: r.file_url ? String(r.file_url) : null,
+    attachmentName: r.attachment_name ? String(r.attachment_name) : null,
+    content: r.content ? String(r.content) : null,
+    status: String(r.status),
+    submittedAt: String(r.submitted_at),
+    score: r.score !== null ? Number(r.score) : null,
+    feedback: r.feedback ? String(r.feedback) : null,
+    gradedAt: r.graded_at ? String(r.graded_at) : null
+  } : null;
+}
+
+export async function getAssignmentSubmissions(assignmentId: string) {
+  const database = await ensureDatabaseReady();
+  const rsAss = await database.execute({
+    sql: `SELECT class_id FROM assignments WHERE id = ? LIMIT 1`,
+    args: [assignmentId]
+  });
+  if (!rsAss.rows[0]) return [];
+  const classId = rsAss.rows[0].class_id;
+
+  const rs = await database.execute({
+    sql: `
+      SELECT st.id as studentId, st.full_name as studentName, st.student_code as studentCode,
+             s.id as submissionId, s.file_url, s.attachment_name, s.content, s.submitted_at,
+             COALESCE(s.status, 'Not Submitted') as status,
+             g.score, g.feedback, g.graded_at
+      FROM class_students cs
+      JOIN students st ON st.id = cs.student_id
+      LEFT JOIN submissions s ON s.assignment_id = ? AND s.student_id = st.id
+      LEFT JOIN grades g ON g.submission_id = s.id
+      WHERE cs.class_id = ?
+      ORDER BY st.full_name ASC
+    `,
+    args: [assignmentId, classId]
+  });
+
+  return rs.rows.map(r => ({
+    studentId: String(r.studentId),
+    studentName: String(r.studentName),
+    studentCode: String(r.studentCode),
+    submissionId: r.submissionId ? String(r.submissionId) : null,
+    fileUrl: r.file_url ? String(r.file_url) : null,
+    attachmentName: r.attachment_name ? String(r.attachment_name) : null,
+    content: r.content ? String(r.content) : null,
+    submittedAt: r.submitted_at ? String(r.submitted_at) : null,
+    status: String(r.status),
+    score: r.score !== null ? Number(r.score) : null,
+    feedback: r.feedback ? String(r.feedback) : null,
+    gradedAt: r.graded_at ? String(r.graded_at) : null
+  }));
+}
+
+export async function gradeSubmission(
+  submissionId: string,
+  score: number,
+  feedback?: string | null,
+  buildingId?: string | null
+) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE submissions SET status = 'Graded' WHERE id = ?`,
+    args: [submissionId]
+  });
+
+  await database.execute({
+    sql: `
+      INSERT OR REPLACE INTO grades (id, submission_id, score, feedback, graded_at, building_id)
+      VALUES (
+        COALESCE((SELECT id FROM grades WHERE submission_id = ?), ?),
+        ?, ?, ?, ?, ?
+      )
+    `,
+    args: [submissionId, randomUUID(), submissionId, score, feedback || null, isoNow(), buildingId || null]
+  });
 }

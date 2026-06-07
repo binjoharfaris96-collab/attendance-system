@@ -67,3 +67,65 @@ export async function createAssignment(formData: FormData) {
     return { error: err.message || "Failed to create assignment" };
   }
 }
+
+export async function submitAssignmentAction(formData: FormData) {
+  const session = await requireSession();
+  const user = await getUserByEmail(session.email);
+  if (!user) return { error: "User not found" };
+
+  const { getStudentByUserId, insertSubmission } = await import("@/lib/db");
+  const student = await getStudentByUserId(user.id);
+  if (!student) return { error: "Not authorized as a student." };
+
+  const assignmentId = formData.get("assignmentId") as string;
+  const fileUrl = formData.get("fileUrl") as string;
+  const attachmentName = formData.get("attachmentName") as string;
+  const content = formData.get("content") as string;
+
+  if (!assignmentId) {
+    return { error: "Missing assignment ID." };
+  }
+
+  try {
+    await insertSubmission(assignmentId, student.id, fileUrl || null, attachmentName || null, content || null, student.buildingId);
+    
+    revalidatePath("/student/assignments");
+    revalidatePath(`/student/assignments/${assignmentId}`);
+    revalidatePath(`/teacher/assignments/${assignmentId}`);
+    revalidatePath("/teacher/assignments");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Failed to submit assignment" };
+  }
+}
+
+export async function gradeSubmissionAction(formData: FormData) {
+  const session = await requireSession();
+  const user = await getUserByEmail(session.email);
+  if (!user) return { error: "User not found" };
+
+  const { getTeacherByUserId, gradeSubmission } = await import("@/lib/db");
+  const teacher = await getTeacherByUserId(user.id);
+  if (!teacher) return { error: "Not authorized as an instructor." };
+
+  const submissionId = formData.get("submissionId") as string;
+  const assignmentId = formData.get("assignmentId") as string;
+  const score = Number(formData.get("score"));
+  const feedback = formData.get("feedback") as string;
+
+  if (!submissionId || !assignmentId || isNaN(score)) {
+    return { error: "Missing required fields or invalid score." };
+  }
+
+  try {
+    await gradeSubmission(submissionId, score, feedback || null, teacher.buildingId);
+    
+    revalidatePath("/student/assignments");
+    revalidatePath(`/student/assignments/${assignmentId}`);
+    revalidatePath(`/teacher/assignments/${assignmentId}`);
+    revalidatePath("/teacher/assignments");
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Failed to grade submission" };
+  }
+}

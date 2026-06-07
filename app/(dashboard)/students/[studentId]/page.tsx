@@ -104,14 +104,25 @@ export default async function StudentDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Back link */}
-      <Link
-        href="/students"
-        className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-accent)]"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        {t("student.backToRoster")}
-      </Link>
+      {/* Top Header */}
+      <div className="flex justify-between items-center">
+        <Link
+          href="/students"
+          className="inline-flex items-center gap-1 text-sm font-medium text-[var(--color-accent)]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          {t("student.backToRoster")}
+        </Link>
+
+        <Link
+          href={`/students/${studentId}/report`}
+          target="_blank"
+          className="btn btn--outline py-1.5 px-4 text-xs font-bold flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
+          Print Report Card
+        </Link>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Left Column: Edit form, Delete form, Behavior Reports, Attendance History */}
