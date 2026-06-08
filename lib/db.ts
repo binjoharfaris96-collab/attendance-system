@@ -1315,21 +1315,33 @@ export async function insertAssignment(
 ) {
   const database = await ensureDatabaseReady();
   await database.execute({
-    sql: `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, topic, assignment_type, points, attachment_url, attachment_name, scheduled_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [randomUUID(), classId, title, description, dueDate, isoNow(), topic || null, type || "assignment", points ?? 100, attachmentUrl || null, attachmentName || null, scheduledAt || null]
+    sql: `INSERT INTO assignments (id, class_id, title, description, due_date, created_at, updated_at, topic, assignment_type, points, attachment_url, attachment_name, scheduled_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [randomUUID(), classId, title, description, dueDate, isoNow(), isoNow(), topic || null, type || "assignment", points ?? 100, attachmentUrl || null, attachmentName || null, scheduledAt || null]
   });
 }
 
 export async function getTeacherByUserId(userId: string) {
   const database = await ensureDatabaseReady();
-  const rs = await database.execute({ sql: `SELECT * FROM teachers WHERE user_id = ?`, args: [userId] });
-  const r = rs.rows[0];
-  return r ? { 
-    id: String(r.id), 
-    fullName: String(r.full_name), 
+  // Try direct match by user_id first
+  const rs = await database.execute({ sql: `SELECT * FROM teachers WHERE user_id = ? LIMIT 1`, args: [userId] });
+  let r = rs.rows[0];
+
+  // If not linked by user_id, try to find a teacher by the user's email (fallback)
+  if (!r) {
+    const ru = await database.execute({ sql: `SELECT email FROM users WHERE id = ? LIMIT 1`, args: [userId] });
+    const userRow = ru.rows[0];
+    if (userRow && userRow.email) {
+      const rf = await database.execute({ sql: `SELECT t.* FROM teachers t LEFT JOIN users u ON u.id = t.user_id WHERE u.email = ? OR t.user_id = ? LIMIT 1`, args: [String(userRow.email), userId] });
+        r = rf.rows[0];
+    }
+  }
+
+  return r ? {
+    id: String(r.id),
+    fullName: String(r.full_name),
     department: r.department ? String(r.department) : null,
-    user_id: String(r.user_id), 
-    buildingId: r.building_id ? String(r.building_id) : null 
+    user_id: r.user_id ? String(r.user_id) : null,
+    buildingId: r.building_id ? String(r.building_id) : null
   } : null;
 }
 
