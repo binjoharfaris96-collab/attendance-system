@@ -1,15 +1,220 @@
+import Link from "next/link";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
+  Folder,
+  GraduationCap,
+  Inbox,
+  Layers3,
+  MessageSquare,
+  MoreVertical,
+  Send,
+} from "lucide-react";
+
 import { requireSession } from "@/lib/auth";
-import { getUserByEmail, getTeacherByUserId, getTeacherClasses, getTeacherAssignments, getLatestAnnouncementsForRole } from "@/lib/db";
+import {
+  getLatestAnnouncementsForRole,
+  getTeacherAssignments,
+  getTeacherByUserId,
+  getTeacherClasses,
+  getUserByEmail,
+} from "@/lib/db";
+import { formatDateTime } from "@/lib/time";
 import { AssignmentForm } from "@/components/teacher/assignment-form";
 import { StreamForm } from "@/components/teacher/stream-form";
-import { AlertCircle, CopyCheck, HelpCircle, MessageSquare, Layout, School, Folder, ListTodo, Paperclip, GraduationCap } from "lucide-react";
-import Link from "next/link";
-import { formatDateTime } from "@/lib/time";
+
+type SearchParams = {
+  tab?: string;
+  classId?: string;
+};
+
+function formatDueDate(value: string | null | undefined) {
+  if (!value) return "No due date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No due date";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function isDueSoon(value: string | null | undefined) {
+  if (!value) return false;
+  const dueDate = new Date(value);
+  if (Number.isNaN(dueDate.getTime())) return false;
+  const now = Date.now();
+  const sevenDays = 1000 * 60 * 60 * 24 * 7;
+  return dueDate.getTime() >= now && dueDate.getTime() <= now + sevenDays;
+}
+
+function countAssigned(assignment: {
+  totalStudents: number;
+  submittedCount: number;
+}) {
+  return Math.max(assignment.totalStudents - assignment.submittedCount, 0);
+}
+
+function isFullyReviewed(assignment: {
+  submittedCount: number;
+  reviewedCount: number;
+}) {
+  return assignment.submittedCount > 0 && assignment.reviewedCount >= assignment.submittedCount;
+}
+
+function TabLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex h-12 shrink-0 items-center border-b-2 px-3 text-sm font-bold transition-colors ${
+        active
+          ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+          : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function ClassFilter({
+  tab,
+  classId,
+  classes,
+}: {
+  tab: string;
+  classId: string;
+  classes: { id: string; name: string }[];
+}) {
+  return (
+    <form className="w-full max-w-sm">
+      <input type="hidden" name="tab" value={tab} />
+      <select
+        name="classId"
+        defaultValue={classId}
+        className="input h-14 w-full border-2 border-[var(--color-accent)] bg-[var(--surface-1)] text-sm font-semibold text-[var(--color-ink)]"
+        aria-label="Filter assignments by class"
+      >
+        <option value="">All classes</option>
+        {classes.map((schoolClass) => (
+          <option key={schoolClass.id} value={schoolClass.id}>
+            {schoolClass.name}
+          </option>
+        ))}
+      </select>
+      <button type="submit" className="sr-only">
+        Apply
+      </button>
+    </form>
+  );
+}
+
+function AssignmentReviewRow({
+  assignment,
+}: {
+  assignment: {
+    id: string;
+    title: string;
+    createdAt: string;
+    className: string;
+    totalStudents: number;
+    submittedCount: number;
+    markedCount: number;
+    reviewedCount: number;
+    type: string;
+    dueDate: string;
+  };
+}) {
+  return (
+    <Link
+      href={`/teacher/assignments/${assignment.id}?tab=student-work`}
+      className="grid gap-4 rounded-lg border border-transparent px-3 py-4 transition-colors hover:border-[var(--color-line)] hover:bg-[var(--surface-2)] md:grid-cols-[1fr_340px_32px]"
+    >
+      <div className="flex min-w-0 items-center gap-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-green-light)] text-[var(--color-green)]">
+          <ClipboardList className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-[var(--color-ink)]">
+            {assignment.title}
+          </p>
+          <p className="truncate text-xs text-[var(--color-muted)]">
+            {assignment.className} · {assignment.type} · Posted{" "}
+            {formatDueDate(assignment.createdAt)}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <p className="text-2xl font-semibold text-[var(--color-ink)]">
+            {assignment.submittedCount}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Handed in</p>
+        </div>
+        <div>
+          <p className="text-2xl font-semibold text-[var(--color-ink)]">
+            {countAssigned(assignment)}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Assigned</p>
+        </div>
+        <div>
+          <p className="text-2xl font-semibold text-[var(--color-ink)]">
+            {assignment.markedCount}
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">Marked</p>
+        </div>
+      </div>
+
+      <span className="hidden items-center justify-center text-[var(--color-muted)] md:flex">
+        <MoreVertical className="h-5 w-5" />
+      </span>
+    </Link>
+  );
+}
+
+function ReviewGroup({
+  title,
+  assignments,
+}: {
+  title: string;
+  assignments: Array<Parameters<typeof AssignmentReviewRow>[0]["assignment"]>;
+}) {
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between px-3">
+        <h2 className="text-xl font-semibold text-[var(--color-ink)]">{title}</h2>
+        <span className="text-sm font-bold text-[var(--color-muted)]">
+          {assignments.length}
+        </span>
+      </div>
+      {assignments.length > 0 ? (
+        <div className="divide-y divide-[var(--color-line)]">
+          {assignments.map((assignment) => (
+            <AssignmentReviewRow key={assignment.id} assignment={assignment} />
+          ))}
+        </div>
+      ) : (
+        <div className="px-3 py-6 text-sm text-[var(--color-muted)]">
+          No work in this group.
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default async function TeacherAssignmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const session = await requireSession();
   const user = await getUserByEmail(session.email);
@@ -17,159 +222,261 @@ export default async function TeacherAssignmentsPage({
 
   if (!teacherProfile) {
     return (
-      <div className="p-8 max-w-3xl mx-auto mt-12 text-center">
-        <AlertCircle className="w-12 h-12 text-[var(--color-danger)] mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-[var(--color-ink)]">Account Not Linked</h1>
-        <p className="text-[var(--color-muted)] mt-2">Your account must be linked by an administrator to manage assignments.</p>
+      <div className="mx-auto mt-12 max-w-3xl p-8 text-center">
+        <AlertCircle className="mx-auto mb-4 h-12 w-12 text-[var(--color-red)]" />
+        <h1 className="text-2xl font-bold text-[var(--color-ink)]">
+          Account Not Linked
+        </h1>
+        <p className="mt-2 text-[var(--color-muted)]">
+          Your account must be linked by an administrator to manage assignments.
+        </p>
       </div>
     );
   }
 
-  const { tab = "classwork" } = await searchParams; // Teachers usually start in Classwork
+  const { tab = "to-review", classId = "" } = await searchParams;
+  const activeTab = ["to-review", "reviewed", "stream", "classwork"].includes(tab)
+    ? tab
+    : "to-review";
   const classes = await getTeacherClasses(teacherProfile.id);
   const assignments = await getTeacherAssignments(teacherProfile.id);
-  const announcements = await getLatestAnnouncementsForRole("teacher", teacherProfile.buildingId, 20);
+  const announcements = await getLatestAnnouncementsForRole(
+    "teacher",
+    teacherProfile.buildingId,
+    20,
+  );
 
-  // Group assignments by topic
-  const groupedAssignments: Record<string, typeof assignments> = {};
-  assignments.forEach(a => {
-    const topic = a.topic || "No Topic";
-    if (!groupedAssignments[topic]) groupedAssignments[topic] = [];
-    groupedAssignments[topic].push(a);
-  });
+  const filteredAssignments = classId
+    ? assignments.filter((assignment) => assignment.classId === classId)
+    : assignments;
+  const toReviewAssignments = filteredAssignments.filter(
+    (assignment) => !isFullyReviewed(assignment),
+  );
+  const reviewedAssignments = filteredAssignments.filter(isFullyReviewed);
+  const noDueDate = toReviewAssignments.filter(
+    (assignment) => !assignment.dueDate || Number.isNaN(new Date(assignment.dueDate).getTime()),
+  );
+  const dueSoon = toReviewAssignments.filter((assignment) =>
+    isDueSoon(assignment.dueDate),
+  );
+  const workInProgress = toReviewAssignments.filter(
+    (assignment) => !noDueDate.includes(assignment) && !dueSoon.includes(assignment),
+  );
+  const tabQuery = classId ? `&classId=${encodeURIComponent(classId)}` : "";
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500">
-      {/* Header & Tabs */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <CopyCheck className="w-10 h-10 text-[var(--color-accent)]" />
-            <div>
-              <h1 className="text-3xl font-black text-[var(--color-ink)] tracking-tight">Assignment Hub</h1>
-              <p className="text-sm text-[var(--color-muted)] font-medium">Manage class feed and learning materials</p>
-            </div>
-          </div>
-          <Link 
-            href="/assignments/guide" 
-            className="btn btn--secondary flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span className="hidden sm:inline">Usage Guide</span>
-          </Link>
+    <div className="mx-auto max-w-7xl space-y-6 px-2 py-4 sm:px-4 lg:px-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            Classroom workspace
+          </p>
+          <h1 className="text-3xl font-black tracking-tight text-[var(--color-ink)]">
+            Assignment Hub
+          </h1>
+          <p className="max-w-2xl text-sm text-[var(--color-muted)]">
+            Review student work, post stream updates, and organize classwork from one place.
+          </p>
         </div>
+        <Link
+          href="/assignments/guide"
+          className="btn btn--outline inline-flex w-fit items-center gap-2"
+        >
+          <BookOpen className="h-4 w-4" />
+          Usage Guide
+        </Link>
+      </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-[var(--color-line)] gap-8 px-2">
-          <Link 
-            href="?tab=stream" 
-            className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${tab === "stream" ? "border-b-[var(--color-accent)] text-[var(--color-accent)]" : "border-b-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]"}`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            📢 Stream
-          </Link>
-          <Link 
-            href="?tab=classwork" 
-            className={`pb-3 text-sm font-bold transition-all border-b-2 flex items-center gap-2 ${tab === "classwork" ? "border-b-[var(--color-accent)] text-[var(--color-accent)]" : "border-b-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]"}`}
-          >
-            <Layout className="w-4 h-4" />
-            📚 Classwork
-          </Link>
+      <div className="overflow-x-auto border-b border-[var(--color-line)]">
+        <div className="flex min-w-max gap-4">
+          <TabLink href={`?tab=to-review${tabQuery}`} active={activeTab === "to-review"}>
+            <ClipboardCheck className="me-2 h-4 w-4" />
+            To review
+          </TabLink>
+          <TabLink href={`?tab=reviewed${tabQuery}`} active={activeTab === "reviewed"}>
+            <CheckCircle2 className="me-2 h-4 w-4" />
+            Reviewed
+          </TabLink>
+          <TabLink href={`?tab=stream${tabQuery}`} active={activeTab === "stream"}>
+            <MessageSquare className="me-2 h-4 w-4" />
+            Stream
+          </TabLink>
+          <TabLink href={`?tab=classwork${tabQuery}`} active={activeTab === "classwork"}>
+            <Layers3 className="me-2 h-4 w-4" />
+            Classwork
+          </TabLink>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {tab === "stream" ? (
-          /* Stream View (Teacher Announcements) */
-          <div className="max-w-4xl mx-auto space-y-6">
+      {activeTab === "to-review" ? (
+        <div className="mx-auto max-w-5xl space-y-8">
+          <ClassFilter tab="to-review" classId={classId} classes={classes} />
+          {toReviewAssignments.length === 0 ? (
+            <div className="py-24 text-center">
+              <Inbox className="mx-auto mb-4 h-14 w-14 text-[var(--color-muted)] opacity-50" />
+              <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                Nothing to review
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Student work that needs attention will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <ReviewGroup title="No due date" assignments={noDueDate} />
+              <ReviewGroup title="Due soon" assignments={dueSoon} />
+              <ReviewGroup title="Work in progress" assignments={workInProgress} />
+            </>
+          )}
+        </div>
+      ) : null}
+
+      {activeTab === "reviewed" ? (
+        <div className="mx-auto max-w-5xl space-y-8">
+          <ClassFilter tab="reviewed" classId={classId} classes={classes} />
+          {reviewedAssignments.length === 0 ? (
+            <div className="py-24 text-center">
+              <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-[var(--color-muted)] opacity-50" />
+              <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                No reviewed work yet
+              </h2>
+              <p className="mx-auto mt-1 max-w-sm text-sm text-[var(--color-muted)]">
+                This is where work you have marked as reviewed will appear.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--color-line)]">
+              {reviewedAssignments.map((assignment) => (
+                <AssignmentReviewRow key={assignment.id} assignment={assignment} />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {activeTab === "stream" ? (
+        <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[220px_1fr]">
+          <aside className="space-y-4">
+            <div className="card p-4">
+              <p className="text-sm font-bold text-[var(--color-ink)]">Upcoming</p>
+              <p className="mt-2 text-xs text-[var(--color-muted)]">
+                {toReviewAssignments.length > 0
+                  ? `${toReviewAssignments.length} items need review`
+                  : "No work due soon"}
+              </p>
+            </div>
+          </aside>
+          <section className="space-y-5">
             <StreamForm buildingId={teacherProfile.buildingId} />
-            
-            <div className="space-y-4">
-              {announcements.length === 0 ? (
-                <div className="card p-12 text-center border-dashed">
-                  <MessageSquare className="w-12 h-12 text-[var(--color-muted)] opacity-20 mx-auto mb-4" />
-                  <p className="text-[var(--color-muted)] italic">No announcements in the stream yet.</p>
-                </div>
-              ) : (
-                announcements.map((ann) => (
-                  <div key={ann.id} className="card p-6 border-l-4 border-l-blue-500/40 hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                        <School className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold text-[var(--color-ink)]">{ann.attachmentType === 'assignment_link' ? 'System Post' : 'You posted'}</p>
-                          <p className="text-[10px] text-[var(--color-muted)]">{formatDateTime(ann.createdAt)}</p>
-                        </div>
-                        <h4 className="font-bold text-[var(--color-ink)]">{ann.title}</h4>
-                        <p className="text-sm text-[var(--color-muted)] leading-relaxed whitespace-pre-wrap">{ann.content}</p>
-                      </div>
+            {announcements.length === 0 ? (
+              <div className="card border-dashed p-12 text-center">
+                <MessageSquare className="mx-auto mb-4 h-12 w-12 text-[var(--color-muted)] opacity-30" />
+                <p className="text-sm text-[var(--color-muted)]">
+                  No announcements in the stream yet.
+                </p>
+              </div>
+            ) : (
+              announcements.map((announcement) => (
+                <article key={announcement.id} className="card p-5">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)]">
+                      <Send className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-[var(--color-ink)]">
+                        {announcement.attachmentType === "assignment_link"
+                          ? "Assignment posted"
+                          : "You posted"}
+                      </p>
+                      <p className="text-xs text-[var(--color-muted)]">
+                        {formatDateTime(announcement.createdAt)}
+                      </p>
+                      <h2 className="mt-3 font-bold text-[var(--color-ink)]">
+                        {announcement.title}
+                      </h2>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--color-muted)]">
+                        {announcement.content}
+                      </p>
                     </div>
+                    <MoreVertical className="h-5 w-5 text-[var(--color-muted)]" />
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Classwork View (Assignments & Materials) */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left: Dispatch Form */}
-            <div className="lg:col-span-1">
-               <AssignmentForm classes={classes} />
-            </div>
+                </article>
+              ))
+            )}
+          </section>
+        </div>
+      ) : null}
 
-            {/* Right: Organized Tasks */}
-            <div className="lg:col-span-2 space-y-10">
-              {Object.keys(groupedAssignments).length === 0 ? (
-                <div className="card p-12 text-center border-dashed">
-                  <CopyCheck className="w-12 h-12 text-[var(--color-muted)] opacity-20 mx-auto mb-4" />
-                  <h3 className="text-lg font-bold text-[var(--color-ink)]">No tasks dispatched yet</h3>
-                  <p className="text-[var(--color-muted)] text-sm max-w-xs mx-auto mt-2">Use the form on the left to start building your classwork curriculum.</p>
-                </div>
-              ) : (
-                Object.entries(groupedAssignments).map(([topic, tasks]) => (
-                  <div key={topic} className="space-y-4">
-                    <div className="flex items-center gap-2 px-2">
-                      <Folder className="w-5 h-5 text-[var(--color-accent)]" />
-                      <h2 className="text-xl font-bold text-[var(--color-ink)]">{topic}</h2>
-                    </div>
-                    <div className="grid gap-2">
-                      {tasks.map(a => (
-                        <div key={a.id} className="card p-4 flex items-center justify-between hover:bg-[var(--surface-2)] transition-colors group cursor-pointer border-l-2 border-transparent hover:border-[var(--color-accent)]">
-                          <div className="flex items-center gap-4 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-[var(--color-accent)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--color-accent)] transition-all">
-                               <ListTodo className="w-4 h-4 text-[var(--color-accent)] group-hover:text-white" />
-                            </div>
-                            <div className="truncate">
-                               <p className="font-bold text-sm text-[var(--color-ink)] truncate">{a.title}</p>
-                               <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-[var(--color-muted)] font-bold uppercase">{a.type}</span>
-                                  <span className="text-[10px] text-[var(--color-muted)]">•</span>
-                                  <span className="text-[10px] text-[var(--color-muted)]">{a.className}</span>
-                               </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 shrink-0">
-                            <div className="hidden sm:flex flex-col items-end mr-2">
-                               <p className="text-[10px] font-bold text-[var(--color-ink)]">{a.submittedCount} / {a.totalStudents}</p>
-                               <p className="text-[8px] text-[var(--color-muted)] uppercase tracking-tighter">Handed in</p>
-                            </div>
-                            <span className="text-[10px] text-[var(--color-muted)] whitespace-nowrap bg-[var(--surface-1)] px-2 py-1 rounded border border-[var(--color-line)]">
-                               Due {new Date(a.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                            </span>
+      {activeTab === "classwork" ? (
+        <div className="mx-auto max-w-5xl space-y-8">
+          <AssignmentForm classes={classes} assignments={assignments} />
+          <section className="space-y-6">
+            {assignments.length === 0 ? (
+              <div className="card border-dashed p-12 text-center">
+                <GraduationCap className="mx-auto mb-4 h-12 w-12 text-[var(--color-muted)] opacity-30" />
+                <h2 className="text-lg font-bold text-[var(--color-ink)]">
+                  No classwork yet
+                </h2>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-muted)]">
+                  Create an assignment, quiz, question, or material to start building this class feed.
+                </p>
+              </div>
+            ) : (
+              Object.entries(
+                assignments.reduce<Record<string, typeof assignments>>((groups, assignment) => {
+                  const topic = assignment.topic || "No Topic";
+                  groups[topic] = groups[topic] || [];
+                  groups[topic].push(assignment);
+                  return groups;
+                }, {}),
+              ).map(([topic, topicAssignments]) => (
+                <section key={topic} className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <Folder className="h-5 w-5 text-[var(--color-accent)]" />
+                    <h2 className="text-xl font-bold text-[var(--color-ink)]">
+                      {topic}
+                    </h2>
+                  </div>
+                  <div className="space-y-2">
+                    {topicAssignments.map((assignment) => (
+                      <Link
+                        key={assignment.id}
+                        href={`/teacher/assignments/${assignment.id}`}
+                        className="card flex flex-col gap-4 p-4 transition-colors hover:bg-[var(--surface-2)] sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex min-w-0 items-center gap-4">
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-green-light)] text-[var(--color-green)]">
+                            <FileText className="h-5 w-5" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-bold text-[var(--color-ink)]">
+                              {assignment.title}
+                            </p>
+                            <p className="truncate text-xs text-[var(--color-muted)]">
+                              {assignment.className} · Due {formatDueDate(assignment.dueDate)}
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="grid grid-cols-3 gap-4 text-center sm:w-64">
+                          <span className="text-xs text-[var(--color-muted)]">
+                            {assignment.submittedCount} handed in
+                          </span>
+                          <span className="text-xs text-[var(--color-muted)]">
+                            {assignment.markedCount} marked
+                          </span>
+                          <span className="text-xs text-[var(--color-muted)]">
+                            {assignment.points} pts
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+                </section>
+              ))
+            )}
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

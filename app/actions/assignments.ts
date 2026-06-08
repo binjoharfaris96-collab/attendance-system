@@ -1,7 +1,7 @@
 "use server";
 
 import { requireSession } from "@/lib/auth";
-import { getUserByEmail, getTeacherByUserId, getTeacherClasses } from "@/lib/db";
+import { getAssignmentById, getUserByEmail, getTeacherByUserId, getTeacherClasses } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
 export async function createAssignment(formData: FormData) {
@@ -23,7 +23,7 @@ export async function createAssignment(formData: FormData) {
   const attachmentName = formData.get("attachmentName") as string;
   const scheduledAtParam = formData.get("scheduledAt") as string;
 
-  if (!classId || !title || !dueDateParam) {
+  if (!classId || !title) {
     return { error: "Missing required fields." };
   }
 
@@ -36,7 +36,7 @@ export async function createAssignment(formData: FormData) {
 
   try {
     const { insertAssignment, insertAnnouncement } = await import("@/lib/db");
-    const dueDateOut = new Date(dueDateParam).toISOString();
+    const dueDateOut = dueDateParam ? new Date(dueDateParam).toISOString() : "";
     const scheduledAt = scheduledAtParam ? new Date(scheduledAtParam).toISOString() : null;
     
     // 1. Create the assignment
@@ -49,7 +49,7 @@ export async function createAssignment(formData: FormData) {
     // 2. Automatically post to Stream
     await insertAnnouncement({
       title: `New ${assignmentType || "Assignment"}: ${title}`,
-      content: `A new task has been posted for ${targetClass.name}. \nDue Date: ${new Date(dueDateOut).toLocaleDateString()} \nPoints: ${points}`,
+      content: `A new task has been posted for ${targetClass.name}. \nDue Date: ${dueDateOut ? new Date(dueDateOut).toLocaleDateString() : "No due date"} \nPoints: ${points}`,
       targetRole: "student",
       buildingId: teacher.buildingId,
       attachmentType: "assignment_link",
@@ -128,4 +128,89 @@ export async function gradeSubmissionAction(formData: FormData) {
   } catch (err: any) {
     return { error: err.message || "Failed to grade submission" };
   }
+}
+
+async function requireTeacherForAssignment(assignmentId: string) {
+  const session = await requireSession();
+  const user = await getUserByEmail(session.email);
+  if (!user) return { error: "User not found" as const };
+
+  const teacher = await getTeacherByUserId(user.id);
+  if (!teacher) return { error: "Not authorized as an instructor." as const };
+
+  const assignment = await getAssignmentById(assignmentId);
+  if (!assignment) return { error: "Assignment not found." as const };
+
+  const teacherClasses = await getTeacherClasses(teacher.id);
+  const ownsClass = teacherClasses.some((c) => c.id === assignment.classId);
+  if (!ownsClass) return { error: "You are not assigned to this assignment." as const };
+
+  return { user, teacher, assignment };
+}
+
+function getSubmissionIds(formData: FormData) {
+  return formData
+    .getAll("submissionId")
+    .map((value) => String(value))
+    .filter(Boolean);
+}
+
+export async function toggleAcceptingSubmissionsAction(formData: FormData) {
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const accepting = String(formData.get("accepting") ?? "") === "true";
+  if (!assignmentId) return;
+
+  const auth = await requireTeacherForAssignment(assignmentId);
+  if ("error" in auth) return;
+
+  const { setAssignmentAcceptingSubmissions } = await import("@/lib/db");
+  await setAssignmentAcceptingSubmissions(assignmentId, accepting);
+  revalidatePath("/teacher/assignments");
+  revalidatePath(`/teacher/assignments/${assignmentId}`);
+  revalidatePath("/student/assignments");
+}
+
+export async function markReviewedAction(formData: FormData) {
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  if (!assignmentId) return;
+
+  const auth = await requireTeacherForAssignment(assignmentId);
+  if ("error" in auth) return;
+
+  const { markAssignmentSubmissionsReviewed } = await import("@/lib/db");
+  await markAssignmentSubmissionsReviewed(assignmentId, getSubmissionIds(formData));
+  revalidatePath("/teacher/assignments");
+  revalidatePath(`/teacher/assignments/${assignmentId}`);
+}
+
+export async function returnWorkAction(formData: FormData) {
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  if (!assignmentId) return;
+
+  const auth = await requireTeacherForAssignment(assignmentId);
+  if ("error" in auth) return;
+
+  const { returnAssignmentSubmissions } = await import("@/lib/db");
+  await returnAssignmentSubmissions(assignmentId, getSubmissionIds(formData));
+  revalidatePath("/teacher/assignments");
+  revalidatePath(`/teacher/assignments/${assignmentId}`);
+  revalidatePath("/student/assignments");
+}
+
+export async function addAssignmentCommentAction(formData: FormData) {
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const content = String(formData.get("content") ?? "").trim();
+  if (!assignmentId || !content) return;
+
+  const auth = await requireTeacherForAssignment(assignmentId);
+  if ("error" in auth) return;
+
+  const { insertAssignmentComment } = await import("@/lib/db");
+  await insertAssignmentComment({
+    assignmentId,
+    authorId: auth.user.id,
+    content,
+    buildingId: auth.teacher.buildingId,
+  });
+  revalidatePath(`/teacher/assignments/${assignmentId}`);
 }

@@ -371,7 +371,8 @@ export async function ensureDatabaseReady() {
       points INTEGER DEFAULT 100,
       attachment_url TEXT,
       attachment_name TEXT,
-      scheduled_at TEXT
+      scheduled_at TEXT,
+      accepting_submissions INTEGER DEFAULT 1
     )
   `);
   await db.execute(`
@@ -384,13 +385,25 @@ export async function ensureDatabaseReady() {
       content TEXT,
       status TEXT NOT NULL, 
       submitted_at TEXT NOT NULL, 
+      building_id TEXT,
+      reviewed_at TEXT,
+      returned_at TEXT
+    )
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS assignment_comments (
+      id TEXT PRIMARY KEY,
+      assignment_id TEXT NOT NULL,
+      author_id TEXT,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
       building_id TEXT
     )
   `);
   await db.execute(`CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, submission_id TEXT NOT NULL UNIQUE, score REAL, feedback TEXT, graded_at TEXT NOT NULL, building_id TEXT)`);
 
   // Ensure building_id columns exist (migration)
-  const tables = ["users", "students", "teachers", "classes", "announcements", "misbehavior_reports", "attendance_events", "schedules", "absence_excuses", "unknown_faces", "phone_detections", "app_settings", "assignments", "submissions", "grades"];
+  const tables = ["users", "students", "teachers", "classes", "announcements", "misbehavior_reports", "attendance_events", "schedules", "absence_excuses", "unknown_faces", "phone_detections", "app_settings", "assignments", "submissions", "grades", "assignment_comments"];
   for (const table of tables) {
     try { await db.execute(`ALTER TABLE ${table} ADD COLUMN building_id TEXT`); } catch (e) {}
   }
@@ -403,9 +416,12 @@ export async function ensureDatabaseReady() {
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN attachment_name TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN scheduled_at TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN updated_at TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN accepting_submissions INTEGER DEFAULT 1`); } catch (e) {}
 
   try { await db.execute(`ALTER TABLE submissions ADD COLUMN attachment_name TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE submissions ADD COLUMN content TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE submissions ADD COLUMN reviewed_at TEXT`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE submissions ADD COLUMN returned_at TEXT`); } catch (e) {}
 
   // Feature expansion: Parents & Linking (migration)
   try { await db.execute(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch (e) {}
@@ -456,7 +472,7 @@ async function autoMigrateBuildings(db: Client) {
       args: { id: mainBuildingId, name: "Main Building", address: "Default Campus", createdAt: now }
     });
 
-    const tables = ["users", "students", "teachers", "classes", "announcements", "misbehavior_reports", "attendance_events", "schedules", "absence_excuses", "unknown_faces", "phone_detections", "app_settings", "assignments", "submissions", "grades"];
+    const tables = ["users", "students", "teachers", "classes", "announcements", "misbehavior_reports", "attendance_events", "schedules", "absence_excuses", "unknown_faces", "phone_detections", "app_settings", "assignments", "submissions", "grades", "assignment_comments"];
     for (const table of tables) {
       try {
         await db.execute({
@@ -1654,7 +1670,10 @@ export async function getTeacherAssignments(teacherId: string) {
     sql: `
       SELECT a.*, c.name as className,
              (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = a.class_id) as totalStudents,
-             (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id) as submittedCount
+             (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id) as submittedCount,
+             (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id AND s.status = 'Graded') as markedCount,
+             (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id AND s.reviewed_at IS NOT NULL) as reviewedCount,
+             (SELECT COUNT(*) FROM submissions s WHERE s.assignment_id = a.id AND s.returned_at IS NOT NULL) as returnedCount
       FROM assignments a 
       JOIN classes c ON c.id = a.class_id 
       WHERE c.teacher_id = ?
@@ -1664,18 +1683,24 @@ export async function getTeacherAssignments(teacherId: string) {
   });
   return rs.rows.map(r => ({
     id: String(r.id),
+    classId: String(r.class_id),
     title: String(r.title),
     description: r.description ? String(r.description) : null,
     dueDate: String(r.due_date),
+    createdAt: String(r.created_at),
     className: String(r.className),
     totalStudents: Number(r.totalStudents || 0),
     submittedCount: Number(r.submittedCount || 0),
+    markedCount: Number(r.markedCount || 0),
+    reviewedCount: Number(r.reviewedCount || 0),
+    returnedCount: Number(r.returnedCount || 0),
     topic: r.topic ? String(r.topic) : null,
     type: r.assignment_type ? String(r.assignment_type) : "assignment",
     points: r.points !== null ? Number(r.points) : 100,
     attachmentUrl: r.attachment_url ? String(r.attachment_url) : null,
     attachmentName: r.attachment_name ? String(r.attachment_name) : null,
-    scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null
+    scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null,
+    acceptingSubmissions: r.accepting_submissions !== null ? Number(r.accepting_submissions) !== 0 : true
   }));
 }
 
@@ -1921,6 +1946,7 @@ export async function getAssignmentById(id: string) {
     attachmentUrl: r.attachment_url ? String(r.attachment_url) : null,
     attachmentName: r.attachment_name ? String(r.attachment_name) : null,
     scheduledAt: r.scheduled_at ? String(r.scheduled_at) : null,
+    acceptingSubmissions: r.accepting_submissions !== null ? Number(r.accepting_submissions) !== 0 : true,
     buildingId: r.building_id ? String(r.building_id) : null
   } : null;
 }
@@ -1934,6 +1960,15 @@ export async function insertSubmission(
   buildingId?: string | null
 ) {
   const database = await ensureDatabaseReady();
+  const rsAssignment = await database.execute({
+    sql: `SELECT accepting_submissions FROM assignments WHERE id = ? LIMIT 1`,
+    args: [assignmentId]
+  });
+  const accepting = rsAssignment.rows[0]?.accepting_submissions;
+  if (accepting !== undefined && accepting !== null && Number(accepting) === 0) {
+    throw new Error("This assignment is no longer accepting submissions.");
+  }
+
   const rs = await database.execute({
     sql: `SELECT id FROM submissions WHERE assignment_id = ? AND student_id = ? LIMIT 1`,
     args: [assignmentId, studentId]
@@ -1942,7 +1977,7 @@ export async function insertSubmission(
   if (rs.rows[0]) {
     const submissionId = rs.rows[0].id;
     await database.execute({
-      sql: `UPDATE submissions SET file_url = ?, attachment_name = ?, content = ?, status = 'Submitted', submitted_at = ? WHERE id = ?`,
+      sql: `UPDATE submissions SET file_url = ?, attachment_name = ?, content = ?, status = 'Submitted', submitted_at = ?, reviewed_at = NULL, returned_at = NULL WHERE id = ?`,
       args: [fileUrl || null, attachmentName || null, content || null, isoNow(), submissionId]
     });
     await database.execute({
@@ -2001,6 +2036,7 @@ export async function getAssignmentSubmissions(assignmentId: string) {
     sql: `
       SELECT st.id as studentId, st.full_name as studentName, st.student_code as studentCode,
              s.id as submissionId, s.file_url, s.attachment_name, s.content, s.submitted_at,
+             s.reviewed_at, s.returned_at,
              COALESCE(s.status, 'Not Submitted') as status,
              g.score, g.feedback, g.graded_at
       FROM class_students cs
@@ -2022,6 +2058,8 @@ export async function getAssignmentSubmissions(assignmentId: string) {
     attachmentName: r.attachment_name ? String(r.attachment_name) : null,
     content: r.content ? String(r.content) : null,
     submittedAt: r.submitted_at ? String(r.submitted_at) : null,
+    reviewedAt: r.reviewed_at ? String(r.reviewed_at) : null,
+    returnedAt: r.returned_at ? String(r.returned_at) : null,
     status: String(r.status),
     score: r.score !== null ? Number(r.score) : null,
     feedback: r.feedback ? String(r.feedback) : null,
@@ -2051,4 +2089,125 @@ export async function gradeSubmission(
     `,
     args: [submissionId, randomUUID(), submissionId, score, feedback || null, isoNow(), buildingId || null]
   });
+}
+
+export async function setAssignmentAcceptingSubmissions(assignmentId: string, accepting: boolean) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `UPDATE assignments SET accepting_submissions = ?, updated_at = ? WHERE id = ?`,
+    args: [accepting ? 1 : 0, isoNow(), assignmentId]
+  });
+}
+
+export async function markAssignmentSubmissionsReviewed(assignmentId: string, submissionIds?: string[]) {
+  const database = await ensureDatabaseReady();
+  const now = isoNow();
+  if (submissionIds?.length) {
+    const placeholders = submissionIds.map(() => "?").join(", ");
+    await database.execute({
+      sql: `UPDATE submissions SET reviewed_at = COALESCE(reviewed_at, ?) WHERE assignment_id = ? AND id IN (${placeholders})`,
+      args: [now, assignmentId, ...submissionIds]
+    });
+    return;
+  }
+
+  await database.execute({
+    sql: `UPDATE submissions SET reviewed_at = COALESCE(reviewed_at, ?) WHERE assignment_id = ? AND status IN ('Submitted', 'Graded')`,
+    args: [now, assignmentId]
+  });
+}
+
+export async function returnAssignmentSubmissions(assignmentId: string, submissionIds?: string[]) {
+  const database = await ensureDatabaseReady();
+  const now = isoNow();
+  if (submissionIds?.length) {
+    const placeholders = submissionIds.map(() => "?").join(", ");
+    await database.execute({
+      sql: `UPDATE submissions SET returned_at = COALESCE(returned_at, ?), reviewed_at = COALESCE(reviewed_at, ?) WHERE assignment_id = ? AND id IN (${placeholders})`,
+      args: [now, now, assignmentId, ...submissionIds]
+    });
+    return;
+  }
+
+  await database.execute({
+    sql: `UPDATE submissions SET returned_at = COALESCE(returned_at, ?), reviewed_at = COALESCE(reviewed_at, ?) WHERE assignment_id = ? AND status IN ('Submitted', 'Graded')`,
+    args: [now, now, assignmentId]
+  });
+}
+
+export async function insertAssignmentComment(input: {
+  assignmentId: string;
+  authorId?: string | null;
+  content: string;
+  buildingId?: string | null;
+}) {
+  const database = await ensureDatabaseReady();
+  await database.execute({
+    sql: `INSERT INTO assignment_comments (id, assignment_id, author_id, content, created_at, building_id) VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [randomUUID(), input.assignmentId, input.authorId || null, input.content, isoNow(), input.buildingId || null]
+  });
+}
+
+export async function getAssignmentComments(assignmentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({
+    sql: `
+      SELECT ac.*, u.full_name as authorName
+      FROM assignment_comments ac
+      LEFT JOIN users u ON u.id = ac.author_id
+      WHERE ac.assignment_id = ?
+      ORDER BY ac.created_at ASC
+    `,
+    args: [assignmentId]
+  });
+
+  return rs.rows.map((r) => ({
+    id: String(r.id),
+    assignmentId: String(r.assignment_id),
+    authorName: r.authorName ? String(r.authorName) : "Teacher",
+    content: String(r.content),
+    createdAt: String(r.created_at)
+  }));
+
+
+export async function getStudentClasses(studentId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({ 
+    sql: `
+      SELECT c.*, t.full_name as teacherName 
+      FROM classes c 
+      JOIN class_students cs ON c.id = cs.class_id 
+      LEFT JOIN teachers t ON c.teacher_id = t.id
+      WHERE cs.student_id = ?
+    `, 
+    args: [studentId] 
+  });
+  return rs.rows.map(r => ({ 
+    id: String(r.id), 
+    name: String(r.name), 
+    subject: r.subject ? String(r.subject) : null,
+    teacherName: r.teacherName ? String(r.teacherName) : "Unknown Teacher",
+  }));
+}
+
+export async function getClassById(classId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({ 
+    sql: `
+      SELECT c.*, t.full_name as teacherName 
+      FROM classes c 
+      LEFT JOIN teachers t ON c.teacher_id = t.id
+      WHERE c.id = ?
+    `, 
+    args: [classId] 
+  });
+  const r = rs.rows[0];
+  if (!r) return null;
+  return { 
+    id: String(r.id), 
+    name: String(r.name), 
+    subject: r.subject ? String(r.subject) : null,
+    teacherName: r.teacherName ? String(r.teacherName) : "Unknown Teacher",
+    teacherId: r.teacher_id ? String(r.teacher_id) : null
+  };
 }

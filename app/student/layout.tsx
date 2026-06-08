@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { LogoutButton } from "@/components/logout-button";
-import { NavLink } from "@/components/nav-link";
 import { DynamicPageTitle } from "@/components/dynamic-page-title";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -10,6 +9,9 @@ import { TopWeatherCard } from "@/components/top-weather-card";
 import { requireSession } from "@/lib/auth";
 import { createTranslator } from "@/lib/i18n";
 import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
+import { getUserByEmail, getStudentByUserId, getStudentClasses } from "@/lib/db";
+import { Home, Calendar, ListTodo, ChevronDown, GraduationCap, HelpCircle } from "lucide-react";
+import { NavLink } from "@/components/nav-link";
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +21,14 @@ export default async function StudentLayout({ children }: { children: ReactNode 
   const initialTheme = await getThemePreference();
   const t = createTranslator(lang);
 
-  const navigationItems = [
-    { href: "/student", labelKey: "nav.studentDashboard", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>` },
-    { href: "/student/attendance", labelKey: "nav.attendanceLog", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>` },
-    { href: "/student/assignments", labelKey: "nav.assignments", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>` },
-    { href: "/announcements", labelKey: "nav.announcements", icon: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8Z"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M6 12h.01"/></svg>` },
-  ] as const;
+  const user = await getUserByEmail(session.email);
+  const studentProfile = user ? await getStudentByUserId(user.id) : null;
+  const enrolledClasses = studentProfile ? await getStudentClasses(studentProfile.id) : [];
 
   return (
     <DashboardShell
       topbar={
-        <div className="glass-card relative flex h-[74px] items-center gap-4 overflow-visible px-4 sm:px-6">
+        <div className="glass-card relative flex h-[74px] items-center gap-4 overflow-visible px-4 sm:px-6 border-b border-[var(--color-line)] bg-[var(--surface-1)]">
           <div className="flex flex-1 min-w-0 items-center gap-4">
             <DynamicPageTitle initialLang={lang} />
           </div>
@@ -49,39 +48,55 @@ export default async function StudentLayout({ children }: { children: ReactNode 
         </div>
       }
       sidebar={
-        <aside className="depth-panel flex h-full flex-col overflow-hidden p-3 text-[var(--sidebar-text)]">
-          <Link href="/student" className="inline-flex items-center gap-2 rounded-2xl border border-[var(--sidebar-border)] bg-[color-mix(in_srgb,var(--surface-1)_82%,transparent)] px-3 py-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] text-[var(--color-accent)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" /><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-              </svg>
+        <aside className="flex h-full flex-col overflow-hidden bg-[var(--surface-1)] border-r border-[var(--sidebar-border)] text-[var(--sidebar-text)] pb-4">
+          <Link href="/student" className="flex items-center gap-3 px-6 py-4 hover:bg-[var(--surface-2)] transition-colors border-b border-[var(--sidebar-border)]">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600">
+              <GraduationCap className="w-5 h-5" />
             </span>
-            <span className="text-sm font-semibold tracking-tight text-[var(--sidebar-text)]">
-              {t("shell.brandName")}
+            <span className="text-lg font-bold tracking-tight text-[var(--color-ink)]">
+              Classroom
             </span>
           </Link>
 
-          <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto pe-1">
-            {navigationItems.map((item) => (
-              <NavLink key={item.href} href={item.href} labelKey={item.labelKey} lang={lang} icon={item.icon} />
-            ))}
-          </nav>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1">
+            <NavLink href="/student" lang={lang} labelKey="nav.home" overrideLabel="Home" icon={`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`} />
+            <NavLink href="/student/calendar" lang={lang} labelKey="nav.calendar" overrideLabel="Calendar" icon={`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`} />
 
-          <div className="mt-4 border-t border-[var(--sidebar-border)] pt-4">
-            <div className="space-y-1.5">
-              <NavLink
-                href="/help"
-                labelKey="nav.helpCenter"
-                lang={lang}
-                icon={`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>`}
-              />
-              <LogoutButton lang={lang} />
+            <div className="pt-4 border-t border-[var(--sidebar-border)] mt-4">
+              <div className="px-3 mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[var(--color-muted)]">
+                <span>Enrolled</span>
+                <ChevronDown className="w-4 h-4" />
+              </div>
+              <NavLink href="/student/todo" lang={lang} labelKey="nav.todo" overrideLabel="To-do" icon={`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>`} />
+              
+              <div className="space-y-0.5 mt-2">
+                {enrolledClasses.map(c => (
+                  <Link 
+                    key={c.id} 
+                    href={`/student/classes/${c.id}`}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--color-ink)] transition-colors group"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 uppercase font-black text-[10px]">
+                      {c.name.charAt(0)}
+                    </div>
+                    <span className="truncate">{c.name}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
+          </div>
+
+          <div className="border-t border-[var(--sidebar-border)] p-3 space-y-1">
+             <Link href="/help" className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-[var(--color-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--color-ink)] transition-colors">
+                <HelpCircle className="w-4 h-4" />
+                <span>Help Center</span>
+             </Link>
+             <LogoutButton lang={lang} />
           </div>
         </aside>
       }
     >
-      <main className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <main className="h-full bg-[var(--color-canvas)]">
         {children}
       </main>
     </DashboardShell>

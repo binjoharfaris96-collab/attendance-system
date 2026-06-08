@@ -1,10 +1,103 @@
-import { requireSession } from "@/lib/auth";
-import { getUserByEmail, getTeacherByUserId, getAssignmentById, getAssignmentSubmissions } from "@/lib/db";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, Calendar, Users, AlertCircle, FileCheck2 } from "lucide-react";
-import { GradeForm } from "@/components/teacher/grade-form";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  FileText,
+  Inbox,
+  MessageCircle,
+  MoreVertical,
+  Send,
+  UserPlus,
+} from "lucide-react";
 
-export default async function TeacherAssignmentDetail({ params }: { params: { id: string } }) {
+import { addAssignmentCommentAction } from "@/app/actions/assignments";
+import { GradeForm } from "@/components/teacher/grade-form";
+import { StudentWorkReviewShell } from "@/components/teacher/student-work-review-shell";
+import { requireSession } from "@/lib/auth";
+import {
+  getAssignmentById,
+  getAssignmentComments,
+  getAssignmentSubmissions,
+  getTeacherByUserId,
+  getTeacherClasses,
+  getUserByEmail,
+} from "@/lib/db";
+
+type SearchParams = {
+  tab?: string;
+  status?: string;
+};
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "No due date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No due date";
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
+function DetailTab({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex h-12 shrink-0 items-center border-b-2 px-3 text-sm font-bold transition-colors ${
+        active
+          ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+          : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "Graded") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-green-light)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--color-green)]">
+        <CheckCircle2 className="h-3 w-3" />
+        Marked
+      </span>
+    );
+  }
+
+  if (status === "Submitted") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent-light)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--color-accent)]">
+        <Inbox className="h-3 w-3" />
+        Handed in
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-red-light)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--color-red)]">
+      <AlertCircle className="h-3 w-3" />
+      Assigned
+    </span>
+  );
+}
+
+export default async function TeacherAssignmentDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
+}) {
+  const { id } = await params;
+  const { tab = "instructions", status = "all" } = await searchParams;
+  const activeTab = tab === "student-work" ? "student-work" : "instructions";
+
   const session = await requireSession();
   const user = await getUserByEmail(session.email);
   if (!user) return notFound();
@@ -12,197 +105,266 @@ export default async function TeacherAssignmentDetail({ params }: { params: { id
   const teacher = await getTeacherByUserId(user.id);
   if (!teacher) return notFound();
 
-  const assignment = await getAssignmentById(params.id);
+  const assignment = await getAssignmentById(id);
   if (!assignment) return notFound();
 
-  const submissions = await getAssignmentSubmissions(params.id);
+  const teacherClasses = await getTeacherClasses(teacher.id);
+  if (!teacherClasses.some((schoolClass) => schoolClass.id === assignment.classId)) {
+    return notFound();
+  }
 
-  const dueDate = new Date(assignment.dueDate);
-  const isPastDue = dueDate < new Date();
+  const [submissions, comments] = await Promise.all([
+    getAssignmentSubmissions(id),
+    getAssignmentComments(id),
+  ]);
 
-  const submittedCount = submissions.filter(s => s.status === 'Submitted' || s.status === 'Graded').length;
-  const gradedCount = submissions.filter(s => s.status === 'Graded').length;
-  const totalCount = submissions.length;
+  const handedInCount = submissions.filter(
+    (submission) => submission.status === "Submitted" || submission.status === "Graded",
+  ).length;
+  const markedCount = submissions.filter((submission) => submission.status === "Graded").length;
+  const assignedCount = Math.max(submissions.length - handedInCount, 0);
+  const filteredSubmissions = submissions.filter((submission) => {
+    if (status === "handed-in") return submission.status === "Submitted";
+    if (status === "marked") return submission.status === "Graded";
+    if (status === "assigned") return submission.status === "Not Submitted";
+    return true;
+  });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Assignment Header */}
-      <div className="card p-6 shadow-xl border-t-4 border-t-purple-500 bg-[var(--surface-1)]">
-        <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 bg-purple-500/10 text-purple-500 text-[10px] font-bold uppercase rounded-md">
-                {assignment.type || "Assignment"}
-              </span>
-              <span className="px-2 py-1 bg-[var(--surface-2)] text-[var(--color-muted)] text-[10px] font-bold uppercase rounded-md">
-                {assignment.className}
-              </span>
-            </div>
-            <h1 className="text-2xl font-bold text-[var(--color-ink)]">{assignment.title}</h1>
-            {assignment.topic && (
-              <p className="text-sm font-medium text-[var(--color-accent)]">{assignment.topic}</p>
-            )}
+    <div className="mx-auto max-w-7xl space-y-5 px-2 py-4 sm:px-4 lg:px-6">
+      <div className="flex flex-col gap-3 border-b border-[var(--color-line)]">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-muted)]">
+              {assignment.className}
+            </p>
+            <h1 className="truncate text-2xl font-black text-[var(--color-ink)]">
+              {assignment.title}
+            </h1>
           </div>
-          <div className="flex flex-col md:items-end gap-2 text-right">
-            <div className={`flex items-center gap-2 text-sm font-bold ${isPastDue ? 'text-red-500' : 'text-[var(--color-muted)]'}`}>
-              <Calendar className="w-4 h-4" />
-              <span>Due: {dueDate.toLocaleDateString()} {dueDate.toLocaleTimeString()}</span>
-            </div>
-            <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-3 py-1 rounded-full">
-              {assignment.points} Points
-            </span>
-          </div>
+          <MoreVertical className="h-5 w-5 text-[var(--color-muted)]" />
         </div>
-
-        <div className="mt-8 prose prose-sm max-w-none text-[var(--color-ink)]">
-          {assignment.description ? (
-            <p className="whitespace-pre-wrap">{assignment.description}</p>
-          ) : (
-            <p className="italic text-[var(--color-muted)]">No description provided.</p>
-          )}
-        </div>
-
-        {assignment.attachmentUrl && (
-          <div className="mt-6 p-4 rounded-xl border border-[var(--color-line)] bg-[var(--surface-2)] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileText className="w-6 h-6 text-blue-500" />
-              <div>
-                <p className="text-sm font-bold text-[var(--color-ink)]">{assignment.attachmentName || "Attached Material"}</p>
-                <p className="text-xs text-[var(--color-muted)]">Reference document</p>
-              </div>
-            </div>
-            <a 
-              href={assignment.attachmentUrl} 
-              target="_blank" 
-              rel="noreferrer"
-              className="btn btn--outline py-1.5 px-4 text-xs rounded-lg"
-            >
-              View
-            </a>
-          </div>
-        )}
-
-        <div className="mt-6 pt-6 border-t border-[var(--color-line)] flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[var(--color-muted)]" />
-            <span className="text-2xl font-black text-[var(--color-ink)]">{totalCount}</span>
-            <span className="text-xs font-bold uppercase text-[var(--color-muted)]">Students</span>
-          </div>
-          <div className="w-px h-8 bg-[var(--color-line)]"></div>
-          <div className="flex items-center gap-2">
-            <FileCheck2 className="w-5 h-5 text-blue-500" />
-            <span className="text-2xl font-black text-blue-600">{submittedCount}</span>
-            <span className="text-xs font-bold uppercase text-blue-600/70">Submitted</span>
-          </div>
-          <div className="w-px h-8 bg-[var(--color-line)]"></div>
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-emerald-500" />
-            <span className="text-2xl font-black text-emerald-600">{gradedCount}</span>
-            <span className="text-xs font-bold uppercase text-emerald-600/70">Graded</span>
-          </div>
+        <div className="flex gap-5 overflow-x-auto">
+          <DetailTab href={`/teacher/assignments/${id}?tab=instructions`} active={activeTab === "instructions"}>
+            Instructions
+          </DetailTab>
+          <DetailTab href={`/teacher/assignments/${id}?tab=student-work`} active={activeTab === "student-work"}>
+            Student work
+          </DetailTab>
         </div>
       </div>
 
-      {/* Submissions List */}
-      <div className="card shadow-xl border border-[var(--color-line)] bg-[var(--surface-1)]">
-        <div className="p-4 border-b border-[var(--color-line)] bg-[var(--surface-2)] rounded-t-xl">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--color-muted)]">Student Submissions</h2>
-        </div>
-        
-        <div className="divide-y divide-[var(--color-line)]">
-          {submissions.length === 0 ? (
-            <div className="p-8 text-center text-[var(--color-muted)]">
-              No students enrolled in this class.
-            </div>
-          ) : (
-            submissions.map(sub => (
-              <div key={sub.studentId} className="p-4 md:p-6 flex flex-col lg:flex-row gap-6">
-                
-                {/* Student Info */}
-                <div className="w-full lg:w-1/4">
-                  <h3 className="font-bold text-[var(--color-ink)]">{sub.studentName}</h3>
-                  <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider">{sub.studentCode}</p>
-                  
-                  <div className="mt-3">
-                    {sub.status === 'Not Submitted' && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">
-                        <AlertCircle className="w-3 h-3" /> Missing
-                      </span>
-                    )}
-                    {sub.status === 'Submitted' && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase">
-                        <FileCheck2 className="w-3 h-3" /> Submitted
-                      </span>
-                    )}
-                    {sub.status === 'Graded' && (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase">
-                        <FileCheck2 className="w-3 h-3" /> Graded
-                      </span>
-                    )}
-                  </div>
-                </div>
+      {activeTab === "instructions" ? (
+        <div className="mx-auto max-w-5xl space-y-6">
+          <section className="grid gap-4 md:grid-cols-[48px_1fr_120px]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-green-light)] text-[var(--color-green)]">
+              <FileText className="h-6 w-6" />
+            </span>
+            <div className="min-w-0 space-y-3">
+              <div>
+                <h2 className="text-3xl font-black tracking-tight text-[var(--color-ink)]">
+                  {assignment.title}
+                </h2>
+                <p className="mt-1 text-sm text-[var(--color-muted)]">
+                  {user.fullName || user.email} · Posted {formatDate(assignment.createdAt)}
+                </p>
+                <p className="mt-2 text-sm font-bold text-[var(--color-ink)]">
+                  {assignment.points} points · Due {formatDate(assignment.dueDate)}
+                </p>
+              </div>
 
-                {/* Submission Content */}
-                <div className="w-full lg:w-2/4 space-y-4">
-                  {sub.status === 'Not Submitted' ? (
-                    <div className="h-full flex items-center justify-center p-6 border border-dashed border-[var(--color-line)] rounded-xl bg-[var(--surface-2)] text-[var(--color-muted)] text-sm italic">
-                      Student has not turned in work yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {sub.content && (
-                        <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--color-line)]">
-                          <p className="text-sm text-[var(--color-ink)] whitespace-pre-wrap">{sub.content}</p>
-                        </div>
-                      )}
-                      
-                      {sub.fileUrl && (
-                        <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--color-line)] flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-blue-500" />
-                            <span className="text-sm font-bold text-[var(--color-ink)]">{sub.attachmentName || "Attached File"}</span>
-                          </div>
-                          <a 
-                            href={sub.fileUrl} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-xs font-bold text-blue-500 hover:underline px-3 py-1 bg-blue-500/10 rounded-lg"
-                          >
-                            Open
-                          </a>
-                        </div>
-                      )}
-                      <p className="text-[10px] font-bold text-[var(--color-muted)]">
-                        Submitted at: {new Date(sub.submittedAt!).toLocaleString()}
+              <div className="border-t border-[var(--color-line)] pt-5">
+                {assignment.description ? (
+                  <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--color-ink)]">
+                    {assignment.description}
+                  </p>
+                ) : (
+                  <p className="text-sm italic text-[var(--color-muted)]">
+                    No instructions were added.
+                  </p>
+                )}
+              </div>
+
+              {assignment.attachmentUrl ? (
+                <a
+                  href={assignment.attachmentUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex max-w-md items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--surface-1)] p-3 transition-colors hover:bg-[var(--surface-2)]"
+                >
+                  <FileText className="h-6 w-6 text-[var(--color-accent)]" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-[var(--color-ink)]">
+                      {assignment.attachmentName || "Attached material"}
+                    </span>
+                    <span className="text-xs text-[var(--color-muted)]">Reference file</span>
+                  </span>
+                </a>
+              ) : null}
+
+              <section className="border-t border-[var(--color-line)] pt-5">
+                <div className="mb-4 flex items-center gap-2 text-sm font-bold text-[var(--color-ink)]">
+                  <MessageCircle className="h-4 w-4" />
+                  Class comments
+                </div>
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="rounded-lg bg-[var(--surface-1)] p-3">
+                      <p className="text-xs font-bold text-[var(--color-ink)]">
+                        {comment.authorName}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--color-muted)]">
+                        {comment.content}
                       </p>
                     </div>
-                  )}
+                  ))}
+                  <form action={addAssignmentCommentAction} className="flex items-center gap-3">
+                    <input type="hidden" name="assignmentId" value={assignment.id} />
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-white">
+                      {user.email.charAt(0).toUpperCase()}
+                    </span>
+                    <input
+                      name="content"
+                      className="input min-w-0 flex-1 bg-[var(--surface-1)]"
+                      placeholder="Add class comment..."
+                    />
+                    <button type="submit" className="floating-action h-10 w-10">
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </form>
                 </div>
-
-                {/* Grading Area */}
-                <div className="w-full lg:w-1/4">
-                  {sub.submissionId ? (
-                    <div className="h-full">
-                      <GradeForm 
-                        submissionId={sub.submissionId}
-                        assignmentId={assignment.id}
-                        maxPoints={assignment.points}
-                        currentScore={sub.score}
-                        currentFeedback={sub.feedback}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-full flex flex-col justify-center items-center p-4 bg-[var(--surface-2)] rounded-xl border border-[var(--color-line)] opacity-50">
-                      <p className="text-xs text-[var(--color-muted)] text-center">Cannot grade until submitted.</p>
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            ))
-          )}
+              </section>
+            </div>
+            <div className="hidden justify-end md:flex">
+              <MoreVertical className="h-5 w-5 text-[var(--color-muted)]" />
+            </div>
+          </section>
         </div>
-      </div>
+      ) : (
+        <StudentWorkReviewShell
+          assignmentId={assignment.id}
+          acceptingSubmissions={assignment.acceptingSubmissions}
+          status={status}
+          submissions={filteredSubmissions.map((submission) => ({
+            studentId: submission.studentId,
+            studentName: submission.studentName,
+            studentCode: submission.studentCode,
+            submissionId: submission.submissionId,
+            status: submission.status,
+          }))}
+        >
+            <section className="p-6 lg:p-8">
+              <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-[var(--color-ink)]">
+                    {assignment.title}
+                  </h2>
+                  <div className="mt-4 grid w-full max-w-sm grid-cols-3 divide-x divide-[var(--color-line)] text-center">
+                    <div>
+                      <p className="text-3xl font-semibold text-[var(--color-ink)]">{handedInCount}</p>
+                      <p className="text-xs text-[var(--color-muted)]">Handed in</p>
+                    </div>
+                    <div>
+                      <p className="text-3xl font-semibold text-[var(--color-ink)]">{assignedCount}</p>
+                      <p className="text-xs text-[var(--color-muted)]">Assigned</p>
+                    </div>
+                    <div>
+                      <p className="text-3xl font-semibold text-[var(--color-ink)]">{markedCount}</p>
+                      <p className="text-xs text-[var(--color-muted)]">Marked</p>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" className="btn btn--outline inline-flex w-fit items-center gap-2">
+                  All
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+
+              {submissions.length === 0 ? (
+                <div className="flex min-h-[380px] flex-col items-center justify-center text-center">
+                  <Inbox className="mb-4 h-20 w-20 text-[var(--color-muted)] opacity-40" />
+                  <p className="max-w-xs font-bold text-[var(--color-ink)]">
+                    This has not been assigned to any students
+                  </p>
+                  <Link
+                    href="/teacher/classes"
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[var(--color-accent)]"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Invite students
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredSubmissions.map((submission) => (
+                    <article key={submission.studentId} className="card p-4">
+                      <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
+                        <div>
+                          <div className="mb-3 flex flex-wrap items-center gap-3">
+                            <h3 className="font-bold text-[var(--color-ink)]">
+                              {submission.studentName}
+                            </h3>
+                            <StatusBadge status={submission.status} />
+                            {submission.returnedAt ? (
+                              <span className="text-xs font-bold text-[var(--color-muted)]">
+                                Returned {formatDate(submission.returnedAt)}
+                              </span>
+                            ) : null}
+                          </div>
+                          {submission.status === "Not Submitted" ? (
+                            <div className="rounded-lg border border-dashed border-[var(--color-line)] bg-[var(--surface-2)] p-5 text-sm text-[var(--color-muted)]">
+                              Student has not turned in work yet.
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {submission.content ? (
+                                <div className="rounded-lg bg-[var(--surface-2)] p-4 text-sm text-[var(--color-ink)]">
+                                  {submission.content}
+                                </div>
+                              ) : null}
+                              {submission.fileUrl ? (
+                                <a
+                                  href={submission.fileUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center justify-between rounded-lg border border-[var(--color-line)] bg-[var(--surface-2)] p-3 text-sm font-bold text-[var(--color-ink)]"
+                                >
+                                  <span className="flex min-w-0 items-center gap-2">
+                                    <FileText className="h-5 w-5 text-[var(--color-accent)]" />
+                                    <span className="truncate">
+                                      {submission.attachmentName || "Attached file"}
+                                    </span>
+                                  </span>
+                                  <span className="text-[var(--color-accent)]">Open</span>
+                                </a>
+                              ) : null}
+                              <p className="text-xs text-[var(--color-muted)]">
+                                Submitted {submission.submittedAt ? formatDate(submission.submittedAt) : ""}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        {submission.submissionId ? (
+                          <GradeForm
+                            submissionId={submission.submissionId}
+                            assignmentId={assignment.id}
+                            maxPoints={assignment.points}
+                            currentScore={submission.score}
+                            currentFeedback={submission.feedback}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center rounded-xl border border-[var(--color-line)] bg-[var(--surface-2)] p-4 text-center text-xs text-[var(--color-muted)]">
+                            Grade after the student submits work.
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+        </StudentWorkReviewShell>
+      )}
     </div>
   );
 }
