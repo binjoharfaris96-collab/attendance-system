@@ -1,9 +1,10 @@
 import { requireSession } from "@/lib/auth";
-import { getStudentByUserId, getUserByEmail, getStudentClasses, getStudentAssignments } from "@/lib/db";
-import { AlertCircle, Folder, MoreVertical, Contact, ClipboardList } from "lucide-react";
+import { getStudentByUserId, getUserByEmail, getStudentClasses, getStudentAssignments, getStudentAttendanceSummary } from "@/lib/db";
+import { AlertCircle, Folder, MoreVertical, Contact, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { listParentRequestsForStudent } from "@/lib/db";
 import { updateParentRequestAction } from "@/app/actions/parent";
+import { AnnouncementFeed } from "@/components/announcement-feed";
 
 const colorThemes = [
   "bg-blue-600 text-white border-blue-700",
@@ -37,6 +38,8 @@ export default async function StudentPortalPage() {
 
   const enrolledClasses = await getStudentClasses(studentProfile.id);
   const assignments = await getStudentAssignments(studentProfile.id);
+  const summary = await getStudentAttendanceSummary(studentProfile.id);
+  const pendingAssignments = assignments.filter(a => a.status === "Not Submitted").length;
   
   // Pending Parent Requests logic kept for functionality
   const parentRequests = await listParentRequestsForStudent(studentProfile.id);
@@ -74,6 +77,52 @@ export default async function StudentPortalPage() {
           </div>
         </section>
       )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Attendance Card */}
+        <div className="card p-6 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <CheckCircle2 className="w-24 h-24" />
+          </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2">On-Time Attendance</h2>
+          <div className="text-5xl font-extrabold text-[var(--color-ink)] mb-4 tracking-tighter">
+            {summary.percentage}%
+          </div>
+          <div className="text-sm text-[var(--color-muted)]">
+            Present for {summary.presentDays} out of {summary.totalSchoolDays} term days.
+          </div>
+        </div>
+
+        {/* Assignments Card */}
+        <div className="card p-6 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <AlertCircle className="w-24 h-24" />
+          </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2">Pending Assignments</h2>
+          <div className="text-5xl font-extrabold text-[var(--color-accent)] mb-4 tracking-tighter">
+            {pendingAssignments}
+          </div>
+          <div className="text-sm text-[var(--color-muted)]">
+            Tasks currently awaiting submission.
+          </div>
+        </div>
+
+        {/* Behavior Card */}
+        <div className="card p-6 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <AlertCircle className="w-24 h-24 text-[var(--color-warning)]" />
+          </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)] mb-2">Warnings / Lates</h2>
+          <div className="text-5xl font-extrabold text-[var(--color-ink)] mb-4 tracking-tighter">
+            {studentProfile.latesCount}
+          </div>
+          <div className="text-sm text-[var(--color-muted)]">
+            Morning Lates recorded this term.
+          </div>
+        </div>
+      </div>
+
+      <h2 className="text-xl font-bold text-[var(--color-ink)] pt-4">Enrolled Classes</h2>
 
       {enrolledClasses.length === 0 ? (
         <div className="p-12 text-center text-[var(--color-muted)] border-2 border-dashed border-[var(--color-line)] rounded-3xl">
@@ -146,6 +195,10 @@ export default async function StudentPortalPage() {
           })}
         </div>
       )}
+
+      <div className="pt-4">
+         <AnnouncementFeed role="student" />
+      </div>
     </div>
   );
 }

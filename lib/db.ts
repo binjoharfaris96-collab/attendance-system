@@ -2169,6 +2169,8 @@ export async function getAssignmentComments(assignmentId: string) {
     createdAt: String(r.created_at)
   }));
 
+}
+
 
 export async function getStudentClasses(studentId: string) {
   const database = await ensureDatabaseReady();
