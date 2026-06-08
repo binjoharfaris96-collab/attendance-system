@@ -28,6 +28,25 @@ import {
   Play,
 } from "lucide-react";
 
+// Small branded-ish SVGs used for Attach buttons to match Classroom visuals
+function DriveLogo(props: { className?: string }) {
+  return (
+    <svg className={props.className} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 7.5 12 21 3 7.5 12 3l9 4.5z" fill="#0F9D58" />
+      <path d="M12 3 3 7.5l4.5 7.5H16.5L21 7.5 12 3z" fill="#F4B400" opacity="0.9" />
+    </svg>
+  );
+}
+
+function YouTubeLogo(props: { className?: string }) {
+  return (
+    <svg className={props.className} width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="5" width="20" height="14" rx="4" fill="#FF0000" />
+      <path d="M10 9.5v5l4-2.5-4-2.5z" fill="#fff" />
+    </svg>
+  );
+}
+
 import { createAssignment } from "@/app/actions/assignments";
 import { GoogleDrivePicker } from "@/components/google-drive-picker";
 
@@ -400,8 +419,8 @@ export function AssignmentForm({
               <section className="rounded-xl border border-[var(--color-line)] bg-[var(--surface-1)] p-5">
                 <p className="mb-5 text-sm font-black text-[var(--color-ink)]">Attach</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                  <AttachButton label="Drive" icon={<FileText className="h-5 w-5" />} onClick={() => setIsDrivePickerOpen(true)} />
-                  <AttachButton label="YouTube" icon={<Play className="h-5 w-5" />} onClick={() => handleLink("YouTube")} />
+                  <AttachButton label="Drive" icon={<DriveLogo />} onClick={() => setIsDrivePickerOpen(true)} />
+                  <AttachButton label="YouTube" icon={<YouTubeLogo />} onClick={() => handleLink("YouTube")} />
                   <AttachButton label="Create" icon={<PlusCircle className="h-5 w-5" />} onClick={() => handleLink("Created file")} />
                   <AttachButton label="Upload" icon={<Upload className="h-5 w-5" />} onClick={() => handleCapture("")} />
                   <AttachButton label="Link" icon={<LinkIcon className="h-5 w-5" />} onClick={() => handleLink("Link")} />
