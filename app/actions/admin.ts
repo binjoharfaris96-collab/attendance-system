@@ -21,7 +21,10 @@ import { revalidatePath } from "next/cache";
 
 export async function linkUserToStudentAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") {
+    console.log("linkUserToStudentAction access denied, session:", session);
+    return { error: `Access denied (role: ${session.role})` };
+  }
 
   const studentId = formData.get("studentId") as string;
   const userId = formData.get("userId") as string;
@@ -37,7 +40,10 @@ export async function linkUserToStudentAction(formData: FormData) {
 
 export async function linkUserToTeacherAction(formData: FormData) {
   const session = await requireSession();
-  if (session.role !== "admin" && session.role !== "owner") return { error: "Access denied" };
+  if (session.role !== "admin" && session.role !== "owner") {
+    console.log("linkUserToTeacherAction access denied, session:", session);
+    return { error: `Access denied (role: ${session.role})` };
+  }
 
   const teacherId = formData.get("teacherId") as string;
   const userId = formData.get("userId") as string;
