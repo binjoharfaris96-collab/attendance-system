@@ -11,11 +11,13 @@ import {
   Inbox,
   Layers3,
   MessageSquare,
+  Users,
   MoreVertical,
   Send,
 } from "lucide-react";
 
 import { requireSession } from "@/lib/auth";
+import { markReviewedAction, returnWorkAction } from "@/app/actions/assignments";
 import {
   getLatestAnnouncementsForRole,
   getTeacherAssignments,
@@ -23,6 +25,8 @@ import {
   getTeacherClasses,
   getUserByEmail,
 } from "@/lib/db";
+import { listTeachers } from "@/lib/db";
+import { listClassStudents } from "@/lib/db";
 import { formatDateTime } from "@/lib/time";
 import { AssignmentForm } from "@/components/teacher/assignment-form";
 import { StreamForm } from "@/components/teacher/stream-form";
@@ -30,6 +34,7 @@ import { StreamForm } from "@/components/teacher/stream-form";
 type SearchParams = {
   tab?: string;
   classId?: string;
+  sub?: string;
 };
 
 function formatDueDate(value: string | null | undefined) {
@@ -234,10 +239,22 @@ export default async function TeacherAssignmentsPage({
     );
   }
 
-  const { tab = "to-review", classId = "" } = await searchParams;
-  const activeTab = ["to-review", "reviewed", "stream", "classwork"].includes(tab)
-    ? tab
-    : "to-review";
+  const { tab = "stream", classId = "", sub = "" } = await searchParams;
+  const primaryTabs = ["stream", "classwork", "people", "marks"];
+  const activeTab = primaryTabs.includes(tab) ? tab : "stream";
+  // Determine which review view to show: check explicit `sub` param, then legacy `tab` values, then derive from activeTab
+  let viewTab = "to-review";
+  if (sub === "to-review" || sub === "reviewed") {
+    viewTab = sub;
+  } else if (tab === "to-review" || tab === "reviewed") {
+    viewTab = tab;
+  } else if (activeTab === "people") {
+    viewTab = "to-review";
+  } else if (activeTab === "marks") {
+    viewTab = "reviewed";
+  } else {
+    viewTab = "to-review";
+  }
   const classes = await getTeacherClasses(teacherProfile.id);
   const assignments = await getTeacherAssignments(teacherProfile.id);
   const announcements = await getLatestAnnouncementsForRole(
@@ -288,15 +305,7 @@ export default async function TeacherAssignmentsPage({
       </div>
 
       <div className="overflow-x-auto border-b border-[var(--color-line)]">
-        <div className="flex min-w-max gap-4">
-          <TabLink href={`?tab=to-review${tabQuery}`} active={activeTab === "to-review"}>
-            <ClipboardCheck className="me-2 h-4 w-4" />
-            To review
-          </TabLink>
-          <TabLink href={`?tab=reviewed${tabQuery}`} active={activeTab === "reviewed"}>
-            <CheckCircle2 className="me-2 h-4 w-4" />
-            Reviewed
-          </TabLink>
+        <div className="flex min-w-max gap-4 items-center">
           <TabLink href={`?tab=stream${tabQuery}`} active={activeTab === "stream"}>
             <MessageSquare className="me-2 h-4 w-4" />
             Stream
@@ -305,10 +314,29 @@ export default async function TeacherAssignmentsPage({
             <Layers3 className="me-2 h-4 w-4" />
             Classwork
           </TabLink>
+          <TabLink href={`?tab=people${tabQuery}`} active={activeTab === "people"}>
+            <Users className="me-2 h-4 w-4" />
+            People
+          </TabLink>
+          <TabLink href={`?tab=marks${tabQuery}`} active={activeTab === "marks"}>
+            <GraduationCap className="me-2 h-4 w-4" />
+            Marks
+          </TabLink>
+
+          <div className="ms-6 flex items-center gap-3">
+            <TabLink href={`?tab=${activeTab}${tabQuery ? tabQuery : ""}&sub=to-review`} active={viewTab === "to-review"}>
+              To review
+            </TabLink>
+            <TabLink href={`?tab=${activeTab}${tabQuery ? tabQuery : ""}&sub=reviewed`} active={viewTab === "reviewed"}>
+              Reviewed
+            </TabLink>
+          </div>
         </div>
       </div>
 
-      {activeTab === "to-review" ? (
+      {/* Secondary review tabs (To review / Reviewed) are rendered inline with primary tabs above */}
+
+      {viewTab === "to-review" && activeTab !== "people" ? (
         <div className="mx-auto max-w-5xl space-y-8">
           <ClassFilter tab="to-review" classId={classId} classes={classes} />
           {toReviewAssignments.length === 0 ? (
@@ -328,6 +356,57 @@ export default async function TeacherAssignmentsPage({
               <ReviewGroup title="Work in progress" assignments={workInProgress} />
             </>
           )}
+        </div>
+      ) : null}
+
+      {activeTab === "people" ? (
+        <div className="mx-auto max-w-5xl space-y-8">
+          <ClassFilter tab="people" classId={classId} classes={classes} />
+
+          <section>
+            <h2 className="mb-4 text-xl font-bold text-[var(--color-ink)]">Teachers</h2>
+            <div className="divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)] bg-[var(--surface-1)]">
+              {(await listTeachers(teacherProfile.buildingId)).map((t: any) => (
+                <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-4">
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)] text-sm font-bold">{(t.full_name||t.fullName||t.fullName||t.userEmail||'T').charAt(0)}</span>
+                    <div>
+                      <p className="font-medium text-[var(--color-ink)]">{t.full_name || t.fullName || t.userEmail}</p>
+                      <p className="text-xs text-[var(--color-muted)]">{t.classesCount ? `${t.classesCount} classes` : "Teacher"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <a href={`mailto:${t.userEmail || ''}`} className="inline-flex items-center text-[var(--color-muted)]">✉️</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-[var(--color-ink)]">Classmates</h2>
+              {classId ? <span className="text-sm text-[var(--color-muted)]">{(await listClassStudents(classId)).length} students</span> : null}
+            </div>
+            <div className="mt-4 divide-y divide-[var(--color-line)] rounded-lg border border-[var(--color-line)] bg-[var(--surface-1)]">
+              {classId ? (
+                (await listClassStudents(classId)).map((s: any) => (
+                  <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-4">
+                    <div className="flex items-center gap-4">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)] text-sm font-bold">{(s.full_name||s.first_name||s.firstName||'').charAt(0)}</span>
+                      <div>
+                        <p className="font-medium text-[var(--color-ink)]">{s.full_name || `${s.first_name || s.firstName} ${s.last_name || s.lastName}`}</p>
+                        <p className="text-xs text-[var(--color-muted)]">{s.student_code || s.code || ''}</p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-[var(--color-muted)]">{/* optional status */}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-[var(--color-muted)]">Select a class to view classmates.</div>
+              )}
+            </div>
+          </section>
         </div>
       ) : null}
 
@@ -354,7 +433,7 @@ export default async function TeacherAssignmentsPage({
         </div>
       ) : null}
 
-      {activeTab === "stream" ? (
+      {activeTab === "stream" && !sub ? (
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[220px_1fr]">
           <aside className="space-y-4">
             <div className="card p-4">
@@ -475,6 +554,71 @@ export default async function TeacherAssignmentsPage({
               ))
             )}
           </section>
+        </div>
+      ) : null}
+
+      {activeTab === "marks" ? (
+        <div className="mx-auto max-w-5xl space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="inline-flex items-center gap-2 rounded border border-[var(--color-line)] bg-[var(--surface-1)] px-4 py-3">
+                <span className="text-sm font-semibold text-[var(--color-muted)]">Sort by</span>
+                <select className="input h-9 bg-[var(--surface-1)] text-sm" defaultValue="surname">
+                  <option value="surname">surname</option>
+                  <option value="firstName">first name</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {assignments[0] ? (
+                <div className="rounded border border-[var(--color-line)] bg-[var(--surface-1)] px-4 py-3 text-sm">
+                  <p className="text-xs text-[var(--color-muted)]">No due date</p>
+                  <p className="font-bold text-[var(--color-ink)] truncate max-w-xs">{assignments[0].title}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <form action={markReviewedAction} className="inline">
+                      <input type="hidden" name="assignmentId" value={assignments[0].id} />
+                      <button type="submit" className="text-xs text-[var(--color-muted)]">Mark all</button>
+                    </form>
+                    <form action={markReviewedAction} className="inline">
+                      <input type="hidden" name="assignmentId" value={assignments[0].id} />
+                      <button type="submit" className="text-xs text-[var(--color-muted)]">Mark as complete</button>
+                    </form>
+                    <form action={returnWorkAction} className="inline">
+                      <input type="hidden" name="assignmentId" value={assignments[0].id} />
+                      <button type="submit" className="text-xs text-[var(--color-muted)]">Return all</button>
+                    </form>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="border-t border-[var(--color-line)]">
+            <div className="grid grid-cols-[1fr_120px] items-center gap-4 px-4 py-3 text-sm font-semibold text-[var(--color-muted)]">
+              <span className="flex items-center gap-3">
+                <Users className="h-5 w-5" />
+                Class average
+              </span>
+              <span className="text-right">{assignments.length ? `${Math.round((assignments.reduce((s,a)=>s+(a.points||0),0)/Math.max(assignments.length,1))*10)/10} avg` : "—"}</span>
+            </div>
+            <div className="divide-y divide-[var(--color-line)]">
+              {/** Simple student list placeholder — load roster if classId present */}
+              {classId ? (
+                (await listClassStudents(classId)).map((s: any) => (
+                  <div key={s.id} className="grid grid-cols-[1fr_120px] items-center gap-4 px-4 py-4 text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)] text-xs font-bold">{(s.full_name||s.first_name||s.firstName||s.last_name||s.lastName||'').charAt(0)}</span>
+                      <span className="font-medium text-[var(--color-ink)]">{s.full_name || `${s.first_name || s.firstName} ${s.last_name || s.lastName}`}</span>
+                    </div>
+                    <div className="text-right text-sm text-[var(--color-muted)]">—</div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-[var(--color-muted)]">Select a class to view marks.</div>
+              )}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

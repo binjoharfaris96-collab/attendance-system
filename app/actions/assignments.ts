@@ -214,3 +214,50 @@ export async function addAssignmentCommentAction(formData: FormData) {
   });
   revalidatePath(`/teacher/assignments/${assignmentId}`);
 }
+
+export async function saveRubricAction(formData: FormData) {
+  const authUser = await requireSession();
+  const user = await getUserByEmail(authUser.email);
+  if (!user) throw new Error("User not found");
+  const teacher = await getTeacherByUserId(user.id);
+  if (!teacher) throw new Error("Not authorized as an instructor.");
+
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const name = String(formData.get("rubricName") ?? "").trim();
+  if (!name) throw new Error("Missing rubric name.");
+
+  const { insertRubric, insertRubricCriterion, attachRubricToAssignment } = await import("@/lib/db");
+  const rubricId = await insertRubric(teacher.id, name, teacher.buildingId);
+
+  // collect criteria from form fields: criterionDescription and criterionPoints repeated
+  const descriptions = formData.getAll("criterionDescription").map((v) => String(v));
+  const points = formData.getAll("criterionPoints").map((v) => Number(v));
+  for (let i = 0; i < descriptions.length; i++) {
+    const desc = descriptions[i] || "";
+    const pts = Number.isFinite(points[i]) ? points[i] : 0;
+    if (desc.trim()) await insertRubricCriterion(rubricId, desc.trim(), pts, i);
+  }
+
+  if (assignmentId) {
+    await attachRubricToAssignment(assignmentId, rubricId);
+    revalidatePath(`/teacher/assignments/${assignmentId}`);
+  }
+  return;
+}
+
+export async function reuseRubricAction(formData: FormData) {
+  const authUser = await requireSession();
+  const user = await getUserByEmail(authUser.email);
+  if (!user) throw new Error("User not found");
+  const teacher = await getTeacherByUserId(user.id);
+  if (!teacher) throw new Error("Not authorized as an instructor.");
+
+  const assignmentId = String(formData.get("assignmentId") ?? "");
+  const rubricId = String(formData.get("rubricId") ?? "");
+  if (!assignmentId || !rubricId) throw new Error("Missing required fields.");
+
+  const { attachRubricToAssignment } = await import("@/lib/db");
+  await attachRubricToAssignment(assignmentId, rubricId);
+  revalidatePath(`/teacher/assignments/${assignmentId}`);
+  return;
+}

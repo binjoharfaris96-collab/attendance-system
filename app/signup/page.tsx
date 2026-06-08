@@ -2,8 +2,13 @@ import { redirect } from "next/navigation";
 
 import { RegisterForm } from "@/components/register-form";
 import { getSession } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 
 export default async function SignupPage() {
+  if (isDemoMode()) {
+    redirect("/login");
+  }
+
   const session = await getSession();
 
   if (session) {

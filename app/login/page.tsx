@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
+import { DemoRolePicker } from "@/components/demo-role-picker";
 import { LoginForm } from "@/components/login-form";
-import { getAuthDefaults, getSession } from "@/lib/auth";
+import { getAuthDefaults, getDemoRedirectForRole, getSession } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 
 function GoogleErrorBanner({ error }: { error: string }) {
   const messages: Record<string, string> = {
@@ -35,17 +36,61 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await getSession();
 
   if (session) {
-    redirect("/dashboard");
+    redirect(getDemoRedirectForRole(session.role));
+  }
+
+  const { error } = await searchParams;
+
+  if (isDemoMode()) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[var(--color-canvas)] p-6 pt-16">
+        <div className="w-full max-w-4xl">
+          <div className="mb-10 flex flex-col items-center justify-center gap-3 text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-blue-500"
+            >
+              <path d="M12 8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />
+              <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+              <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+            </svg>
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-ink)]">
+              Smart Attendance AI
+            </h1>
+            <p className="max-w-lg text-[var(--color-muted)]">
+              Welcome to the school management demonstration. Choose a role below to explore the system with realistic sample data.
+            </p>
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+              DEMO MODE - Sample Data
+            </span>
+          </div>
+
+          <DemoRolePicker />
+
+          <p className="mt-8 text-center text-xs text-[var(--color-muted)]">
+            No sign-in required. Each role loads a fully populated demo profile.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   const defaults = await getAuthDefaults();
-  const { error } = await searchParams;
   const googleConfigured = Boolean(process.env.GOOGLE_CLIENT_ID);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--color-canvas)] p-6">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="mb-8 flex items-center justify-center gap-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -73,7 +118,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </span>
         </div>
 
-        {/* Card */}
         <div className="card">
           <div className="mb-6 text-center">
             <h1 className="text-xl font-semibold text-[var(--color-ink)]">
@@ -84,10 +128,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           </div>
 
-          {/* OAuth error banner */}
           {error && <GoogleErrorBanner error={error} />}
 
-          {/* Google OAuth button */}
           {googleConfigured && (
             <>
               <a

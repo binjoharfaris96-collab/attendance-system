@@ -401,6 +401,25 @@ export async function ensureDatabaseReady() {
     )
   `);
   await db.execute(`CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, submission_id TEXT NOT NULL UNIQUE, score REAL, feedback TEXT, graded_at TEXT NOT NULL, building_id TEXT)`);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS rubrics (
+      id TEXT PRIMARY KEY,
+      teacher_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      building_id TEXT
+    )
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS rubric_criteria (
+      id TEXT PRIMARY KEY,
+      rubric_id TEXT NOT NULL,
+      description TEXT NOT NULL,
+      points INTEGER DEFAULT 0,
+      ord INTEGER DEFAULT 0,
+      FOREIGN KEY(rubric_id) REFERENCES rubrics(id) ON DELETE CASCADE
+    )
+  `);
 
   // Ensure building_id columns exist (migration)
   const tables = ["users", "students", "teachers", "classes", "announcements", "misbehavior_reports", "attendance_events", "schedules", "absence_excuses", "unknown_faces", "phone_detections", "app_settings", "assignments", "submissions", "grades", "assignment_comments"];
@@ -417,6 +436,7 @@ export async function ensureDatabaseReady() {
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN scheduled_at TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN updated_at TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE assignments ADD COLUMN accepting_submissions INTEGER DEFAULT 1`); } catch (e) {}
+  try { await db.execute(`ALTER TABLE assignments ADD COLUMN rubric_id TEXT`); } catch (e) {}
 
   try { await db.execute(`ALTER TABLE submissions ADD COLUMN attachment_name TEXT`); } catch (e) {}
   try { await db.execute(`ALTER TABLE submissions ADD COLUMN content TEXT`); } catch (e) {}
@@ -455,6 +475,11 @@ export async function ensureDatabaseReady() {
   await autoMigrateBuildings(db);
 
   await db.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('late_cutoff_minutes', '470')");
+
+  if (process.env.DEMO_MODE === "true") {
+    const { seedDemoDataIfNeeded } = await import("@/lib/demo-seed");
+    await seedDemoDataIfNeeded(db);
+  }
 
   globalForDatabase.isReady = true;
   return db;
@@ -1320,6 +1345,31 @@ export async function insertAssignment(
   });
 }
 
+export async function insertRubric(teacherId: string, name: string, buildingId?: string | null) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  await database.execute({ sql: `INSERT INTO rubrics (id, teacher_id, name, created_at, building_id) VALUES (?, ?, ?, ?, ?)`, args: [id, teacherId, name, isoNow(), buildingId || null] });
+  return id;
+}
+
+export async function insertRubricCriterion(rubricId: string, description: string, points?: number | null, ord?: number | null) {
+  const database = await ensureDatabaseReady();
+  const id = randomUUID();
+  await database.execute({ sql: `INSERT INTO rubric_criteria (id, rubric_id, description, points, ord) VALUES (?, ?, ?, ?, ?)`, args: [id, rubricId, description, points ?? 0, ord ?? 0] });
+  return id;
+}
+
+export async function listRubrics(teacherId: string) {
+  const database = await ensureDatabaseReady();
+  const rs = await database.execute({ sql: `SELECT id, name, created_at as createdAt FROM rubrics WHERE teacher_id = ? ORDER BY created_at DESC`, args: [teacherId] });
+  return rs.rows.map((r: any) => ({ id: String(r.id), name: String(r.name), createdAt: r.createdAt }));
+}
+
+export async function attachRubricToAssignment(assignmentId: string, rubricId: string) {
+  const database = await ensureDatabaseReady();
+  await database.execute({ sql: `UPDATE assignments SET rubric_id = ?, updated_at = ? WHERE id = ?`, args: [rubricId, isoNow(), assignmentId] });
+}
+
 export async function getTeacherByUserId(userId: string) {
   const database = await ensureDatabaseReady();
   // Try direct match by user_id first
@@ -1864,7 +1914,7 @@ export async function getStudentTeachers(studentId: string) {
   const database = await ensureDatabaseReady();
   const rs = await database.execute({
     sql: `
-      SELECT t.full_name as fullName, c.name as className, c.subject
+      SELECT t.id as teacherId, t.full_name as fullName, c.id as classId, c.name as className, c.subject
       FROM teachers t
       JOIN classes c ON c.teacher_id = t.id
       JOIN class_students cs ON cs.class_id = c.id
@@ -1873,6 +1923,8 @@ export async function getStudentTeachers(studentId: string) {
     args: [studentId]
   });
   return rs.rows.map(r => ({
+    teacherId: String(r.teacherId),
+    classId: String(r.classId),
     fullName: String(r.fullName),
     className: String(r.className),
     subject: r.subject ? String(r.subject) : "General"

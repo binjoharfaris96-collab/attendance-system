@@ -6,10 +6,16 @@ import { deleteAnnouncementAction } from "@/app/actions/admin";
 import { AnnouncementForm } from "@/components/admin/announcement-form";
 import { DeleteButton } from "@/components/admin/delete-button";
 import { formatDateTime } from "@/lib/time";
+import { redirect } from "next/navigation";
+
 import { requireSession } from "@/lib/auth";
 
 export default async function AnnouncementsPage() {
   const session = await requireSession();
+
+  if (session.role === "parent") {
+    redirect("/parent/announcements");
+  }
   const announcements = await listAllAnnouncements(session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);

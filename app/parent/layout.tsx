@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ParentTopNav } from "@/components/parent-top-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { requireSession } from "@/lib/auth";
 import { createTranslator } from "@/lib/i18n";
@@ -41,6 +42,8 @@ export default async function ParentLayout({ children }: { children: ReactNode }
                 </span>
               </div>
             </Link>
+
+            <ParentTopNav />
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -81,8 +84,8 @@ export default async function ParentLayout({ children }: { children: ReactNode }
               <span className="text-xs">Propelling Academic Excellence</span>
             </div>
             <div className="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-[var(--color-muted)]">
-              <Link href="/help" className="hover:text-[var(--color-accent)] transition-colors">Help Center</Link>
-              <Link href="/announcements" className="hover:text-[var(--color-accent)] transition-colors">Announcements</Link>
+              <Link href="/parent/help" className="hover:text-[var(--color-accent)] transition-colors">Help Center</Link>
+              <Link href="/parent/announcements" className="hover:text-[var(--color-accent)] transition-colors">Announcements</Link>
             </div>
           </div>
         </div>

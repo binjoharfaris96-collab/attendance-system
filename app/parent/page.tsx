@@ -242,7 +242,7 @@ export default async function ParentDashboard() {
                                  <span className="text-[10px] font-black text-[var(--color-muted)] opacity-50 italic">Teacher directory pending enrolment confirmation</span>
                               ) : (
                                  child.teachers.map(t => (
-                                    <div key={t.fullName} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-line)] bg-white/50 shadow-sm transition-all hover:shadow-md">
+                                    <div key={`${t.teacherId}-${t.classId}`} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--color-line)] bg-white/50 shadow-sm transition-all hover:shadow-md">
                                        <div className="h-4 w-4 flex items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
                                           {t.fullName.charAt(0)}
                                        </div>
@@ -331,7 +331,7 @@ export default async function ParentDashboard() {
                         <p className="text-[10px] font-bold text-amber-600 uppercase tracking-tighter">{formatDateTime(ann.createdAt)}</p>
                         <h4 className="text-sm font-bold text-[var(--color-ink)] mt-1">{ann.title}</h4>
                         <p className="text-xs text-[var(--color-muted)] mt-1 line-clamp-2">{ann.content}</p>
-                        <Link href="/announcements" className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-all">
+                        <Link href="/parent/announcements" className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition-all">
                            Read Full Story
                            <ExternalLink className="w-2.5 h-2.5" />
                         </Link>

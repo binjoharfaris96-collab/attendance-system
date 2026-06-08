@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 
+import { DEMO_OWNER_EMAIL, getDemoRedirectForRole, isDemoMode } from "@/lib/demo";
 import { getSetting, getUserByEmail, updateSetting } from "@/lib/db";
 import type { Session } from "@/lib/types";
 
@@ -58,6 +59,9 @@ async function getStoredAdminPasswordHash() {
 }
 
 export async function getResolvedAdminEmail() {
+  if (isDemoMode()) {
+    return DEMO_OWNER_EMAIL;
+  }
   return getEnvAdminEmail() ?? (await getStoredAdminEmail()) ?? "admin@example.com";
 }
 
@@ -343,6 +347,8 @@ export async function requireSession() {
 
   return session;
 }
+
+export { getDemoRedirectForRole };
 export async function requireAdminRole() {
   const session = await requireSession();
   if (session.role === "parent") {

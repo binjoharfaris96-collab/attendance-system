@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import { getSession } from "@/lib/auth";
+import { getDemoRedirectForRole, getSession } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 
 const moduleRows = [
   {
@@ -100,6 +102,11 @@ const faqRows = [
 
 export default async function Home() {
   const session = await getSession();
+
+  if (isDemoMode()) {
+    redirect(session ? getDemoRedirectForRole(session.role) : "/login");
+  }
+
   const primaryHref = session ? "/dashboard" : "/login";
 
   return (

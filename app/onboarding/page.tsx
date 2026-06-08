@@ -1,9 +1,14 @@
 import { getSession } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/onboarding-form";
 import { getAppLanguage } from "@/lib/i18n-server";
 
 export default async function OnboardingPage() {
+  if (isDemoMode()) {
+    redirect("/login");
+  }
+
   const session = await getSession();
   
   // If not logged in, go to login

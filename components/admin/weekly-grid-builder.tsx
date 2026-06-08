@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { saveWeeklyScheduleAction } from "@/app/actions/admin";
 import { Save, Plus, Trash2, Clock, Calendar, CheckCircle2, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,7 @@ type GridCell = {
   subject: string;
 };
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
 
 const DEFAULT_PERIODS = [
   { startTime: "08:00", endTime: "08:45" },
@@ -239,22 +239,13 @@ export function WeeklyGridBuilder({
                               onChange={e => handleCellChange(day, pIndex, "subject", e.target.value)}
                               className="text-xs font-bold text-[var(--color-ink)] placeholder:text-[color-mix(in_srgb,var(--color-muted)_65%,transparent)] bg-transparent border-none outline-none focus:placeholder:opacity-0 transition-opacity"
                             />
-                            <div className="relative group/sel">
-                              <select 
+                            <div className="relative">
+                              <TeacherSelect
                                 value={cell.teacherId || ""}
-                                onChange={e => handleCellChange(day, pIndex, "teacherId", e.target.value)}
-                                className={`w-full text-[10px] font-black uppercase tracking-tight bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] hover:bg-[color-mix(in_srgb,var(--surface-1)_80%,transparent)] border border-[var(--color-line)] rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--color-accent)_24%,transparent)] transition-all appearance-none cursor-pointer ${
-                                  !cell.teacherId ? 'text-[var(--color-muted)]' : 'text-[var(--color-accent)] border-[color-mix(in_srgb,var(--color-accent)_25%,var(--color-line))] bg-[color-mix(in_srgb,var(--color-accent)_10%,transparent)]'
-                                }`}
-                              >
-                                <option value="">Select Teacher</option>
-                                {teachers.map(t => (
-                                  <option key={t.id} value={t.id}>{t.fullName}</option>
-                                ))}
-                              </select>
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
-                                <Plus className="w-3 h-3 text-[var(--color-muted)]" />
-                              </div>
+                                onChange={(val: string) => handleCellChange(day, pIndex, "teacherId", val)}
+                                teachers={teachers}
+                                placeholder="Select Teacher"
+                              />
                             </div>
                           </div>
                         </td>
@@ -283,10 +274,80 @@ export function WeeklyGridBuilder({
            </div>
            <div className="space-y-1">
              <p className="text-[var(--color-ink)] font-black text-xl">No Classroom Selected</p>
-             <p className="text-[var(--color-muted)] text-sm max-w-xs mx-auto">Please select a target class above to start building its comprehensive weekly 7-day schedule.</p>
+             <p className="text-[var(--color-muted)] text-sm max-w-xs mx-auto">Please select a target class above to start building its comprehensive weekly 5-day schedule.</p>
             </div>
          </div>
       )}
+    </div>
+  );
+}
+
+function TeacherSelect({
+  value,
+  onChange,
+  teachers,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  teachers: { id: string; fullName: string }[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!ref.current) return;
+      if (!ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("click", onDoc);
+    return () => document.removeEventListener("click", onDoc);
+  }, []);
+
+  const selected = teachers.find((t) => t.id === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        className={`w-full text-sm text-left px-3 py-2 rounded-lg border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--surface-2)_70%,transparent)] transition-colors focus:outline-none flex items-center justify-between ${
+          value ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
+        }`}
+      >
+        <span className="truncate">{selected ? selected.fullName : placeholder}</span>
+        <span className="ms-3 text-[var(--color-muted)]">▾</span>
+      </button>
+
+      {open ? (
+        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-[var(--color-line)] bg-[var(--surface-1)]/100 backdrop-blur-none shadow-lg">
+          <li
+            key="__none"
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+            className="px-3 py-2 text-sm cursor-pointer hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)] text-[var(--color-ink)]"
+          >
+            {placeholder}
+          </li>
+          {teachers.map((t) => (
+            <li
+              key={t.id}
+              onClick={() => {
+                onChange(t.id);
+                setOpen(false);
+              }}
+              className={`px-3 py-2 text-sm cursor-pointer hover:bg-[color-mix(in_srgb,var(--color-accent)_8%,transparent)] text-[var(--color-ink)] ${
+                value === t.id ? "bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)] font-semibold" : ""
+              }`}
+            >
+              {t.fullName}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

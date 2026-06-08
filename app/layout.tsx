@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { DemoModeBanner } from "@/components/demo-mode-banner";
 import { getAppLanguage, getThemePreference } from "@/lib/i18n-server";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -34,6 +35,6 @@ export default async function RootLayout({
       dir={appLang === "ar" ? "rtl" : "ltr"}
       className={`h-full ${themeClass}`}
       suppressHydrationWarning
-    ><body className="min-h-full bg-[var(--color-canvas)] text-[var(--color-ink)] antialiased transition-colors duration-200" suppressHydrationWarning>{children}<SpeedInsights /></body></html>
+    ><body className="min-h-full bg-[var(--color-canvas)] text-[var(--color-ink)] antialiased transition-colors duration-200" suppressHydrationWarning><DemoModeBanner /><div className={process.env.DEMO_MODE === "true" ? "pt-10" : ""}>{children}</div><SpeedInsights /></body></html>
   );
 }

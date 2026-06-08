@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   AlignLeft,
   Bold,
@@ -47,7 +47,7 @@ function YouTubeLogo(props: { className?: string }) {
   );
 }
 
-import { createAssignment } from "@/app/actions/assignments";
+import { createAssignment, saveRubricAction, reuseRubricAction } from "@/app/actions/assignments";
 import { GoogleDrivePicker } from "@/components/google-drive-picker";
 
 type TeacherClass = {
@@ -120,9 +120,11 @@ function formatPostDate(value?: string | null) {
 export function AssignmentForm({
   classes,
   assignments = [],
+  assignmentId,
 }: {
   classes: TeacherClass[];
   assignments?: ReusableAssignment[];
+  assignmentId?: string;
 }) {
   const [mode, setMode] = useState<ComposerMode | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -130,6 +132,27 @@ export function AssignmentForm({
   const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const [showReuseDialog, setShowReuseDialog] = useState(false);
   const [showTopicDialog, setShowTopicDialog] = useState(false);
+  const [showRubricDialog, setShowRubricDialog] = useState(false);
+  const [showRubricMenu, setShowRubricMenu] = useState(false);
+  const [showRubricReuseDialog, setShowRubricReuseDialog] = useState(false);
+  const [availableRubrics, setAvailableRubrics] = useState<Array<{id:string;name:string;createdAt:string}>>([]);
+  const [selectedRubricId, setSelectedRubricId] = useState("");
+
+  useEffect(() => {
+    if (!showRubricReuseDialog) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/rubrics');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setAvailableRubrics(data.rubrics || []);
+      } catch (e) {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showRubricReuseDialog]);
   const [showQuestionTypes, setShowQuestionTypes] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -137,6 +160,45 @@ export function AssignmentForm({
   const [points, setPoints] = useState("100");
   const [dueDate, setDueDate] = useState("");
   const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [criteria, setCriteria] = useState<Array<{ id: string; description: string; points: string }>>([
+    { id: "c-0", description: "", points: "0" },
+  ]);
+
+  function addCriterion() {
+    setCriteria((prev) => [...prev, { id: `c-${prev.length}`, description: "", points: "0" }]);
+  }
+
+  function removeCriterion(id: string) {
+    setCriteria((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function updateCriterion(id: string, patch: Partial<{ description: string; points: string }>) {
+    setCriteria((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  }
+
+  async function importFromSheetCsv() {
+    try {
+      const url = window.prompt("Paste public CSV URL or Google Sheets CSV export URL:");
+      if (!url) return;
+      const res = await fetch(url);
+      if (!res.ok) {
+        window.alert("Failed to fetch CSV");
+        return;
+      }
+      const text = await res.text();
+      const rows = text.split(/\r?\n/).map((r) => r.trim()).filter(Boolean);
+      const parsed = rows.map((row, idx) => {
+        const cols = row.split(',');
+        const desc = cols[0] ? cols[0].trim().replace(/^"|"$/g, '') : '';
+        const pts = cols[1] ? cols[1].trim().replace(/^"|"$/g, '') : '0';
+        return { id: `c-import-${idx}`, description: desc, points: pts };
+      });
+      if (parsed.length > 0) setCriteria(parsed);
+    } catch (e) {
+      console.error(e);
+      window.alert("Import failed");
+    }
+  }
   const [attachmentName, setAttachmentName] = useState("");
   const [questionType, setQuestionType] = useState<"short" | "multiple">("short");
   const [studentsCanReply, setStudentsCanReply] = useState(true);
@@ -253,7 +315,7 @@ export function AssignmentForm({
           Create
         </button>
         {menuOpen ? (
-          <div className="absolute left-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--surface-1)] shadow-2xl">
+          <div className="absolute left-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--surface-1)]/100 backdrop-blur-none shadow-2xl">
             <button type="button" onClick={() => openComposer("assignment")} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink)] hover:bg-[var(--surface-2)]">
               <ClipboardList className="h-5 w-5 text-[var(--color-accent)]" />
               Assignment
@@ -296,10 +358,16 @@ export function AssignmentForm({
             </>
           ) : null}
 
-          <div className="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
-            <button type="button" onClick={resetComposer} className="floating-action h-9 w-9" aria-label="Close composer">
+          <div className="relative flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
+            <button
+              type="button"
+              onClick={resetComposer}
+              aria-label="Close composer"
+              className="absolute left-3 top-3 z-50 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--surface-2)]"
+            >
               <X className="h-4 w-4" />
             </button>
+            <div className="min-w-[48px]" />
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-green-light)] text-[var(--color-green)]">
               {activeMode.icon}
             </span>
@@ -467,27 +535,53 @@ export function AssignmentForm({
                 <input type="hidden" name="dueDate" value="" />
               )}
 
-              <label className="space-y-2">
-                <span className="text-sm font-bold text-[var(--color-ink)]">Topic</span>
-                <select value={topic} onChange={(event) => setTopic(event.target.value)} className="input h-14 w-full bg-[var(--surface-2)]">
-                  <option value="">No topic</option>
-                  {topics.map((existingTopic) => (
-                    <option key={existingTopic} value={existingTopic}>
-                      {existingTopic}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="flex items-center gap-3">
+                <label className="flex-1 space-y-2">
+                  <span className="text-sm font-bold text-[var(--color-ink)]">Topic</span>
+                  <select value={topic} onChange={(event) => setTopic(event.target.value)} className="input h-14 w-full bg-[var(--surface-2)]">
+                    <option value="">No topic</option>
+                    {topics.map((existingTopic) => (
+                      <option key={existingTopic} value={existingTopic}>
+                        {existingTopic}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              {mode === "assignment" || mode === "quiz" ? (
-                <div className="space-y-2">
-                  <span className="text-sm font-bold text-[var(--color-ink)]">Rubric</span>
-                  <button type="button" onClick={() => handleLink("Rubric")} className="btn btn--outline inline-flex rounded-full">
-                    <Plus className="me-2 h-4 w-4" />
-                    Rubric
-                  </button>
-                </div>
-              ) : null}
+                {(mode === "assignment" || mode === "quiz") ? (
+                  <div className="flex-shrink-0">
+                    <div className="relative inline-block">
+                      <button
+                        type="button"
+                        onClick={() => setShowRubricMenu((v) => !v)}
+                        className="inline-flex items-center gap-2 h-14 rounded-full bg-[var(--surface-1)] px-4 text-sm font-semibold text-[var(--color-accent)]"
+                        aria-expanded={showRubricMenu}
+                      >
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent)] text-white">
+                          <Plus className="h-3 w-3" />
+                        </span>
+                        <span>Rubric</span>
+                      </button>
+                      {showRubricMenu ? (
+                        <div className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--surface-1)] shadow-xl">
+                          <button type="button" onClick={() => { setShowRubricMenu(false); setShowRubricDialog(true); }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink)] hover:bg-[var(--surface-2)]">
+                            <Plus className="h-4 w-4 text-[var(--color-accent)]" />
+                            Create new
+                          </button>
+                          <button type="button" onClick={() => { setShowRubricMenu(false); setShowRubricReuseDialog(true); }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink)] hover:bg-[var(--surface-2)]">
+                            <RefreshCcw className="h-4 w-4 text-[var(--color-accent)]" />
+                            Reuse existing
+                          </button>
+                          <button type="button" onClick={() => { setShowRubricMenu(false); const url = window.prompt('Enter Google Sheets URL to import rubric from:'); if (url) { /* placeholder: import flow */ window.alert('Import from Sheets: ' + url); } }} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-[var(--color-ink)] hover:bg-[var(--surface-2)]">
+                            <FileText className="h-4 w-4 text-[var(--color-accent)]" />
+                            Import from Sheets
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
 
               {mode === "question" ? (
                 <div className="space-y-4 pt-2">
@@ -507,6 +601,104 @@ export function AssignmentForm({
                 <input name="scheduledAt" type="datetime-local" className="input h-14 w-full bg-[var(--surface-2)]" />
               </label>
             </aside>
+          </div>
+        </form>
+      ) : null}
+
+      {showRubricReuseDialog ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-[var(--surface-1)] shadow-2xl">
+            <div className="flex items-center gap-3 border-b border-[var(--color-line)] p-5">
+              <button type="button" onClick={() => setShowRubricReuseDialog(false)} className="floating-action h-9 w-9">
+                <X className="h-4 w-4" />
+              </button>
+              <h2 className="text-xl font-black text-[var(--color-ink)]">Reuse rubric</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[var(--color-muted)]">Choose a rubric to attach to this assignment.</p>
+              <div className="mt-4 space-y-3">
+                <p className="text-sm text-[var(--color-muted)]">Choose a rubric to attach to this assignment.</p>
+                <div className="mt-3 space-y-2">
+                  {availableRubrics.length === 0 ? (
+                    <p className="text-sm text-[var(--color-muted)]">No saved rubrics yet.</p>
+                  ) : (
+                    <form action={reuseRubricAction} className="space-y-3">
+                      <input type="hidden" name="assignmentId" value={assignmentId ?? ""} />
+                      {availableRubrics.map((r) => (
+                        <label key={r.id} className="flex items-center gap-3">
+                          <input type="radio" name="rubricId" value={r.id} onChange={() => setSelectedRubricId(r.id)} />
+                          <span className="text-sm">{r.name}</span>
+                        </label>
+                      ))}
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={!selectedRubricId} className="btn btn--primary">Attach</button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end border-t border-[var(--color-line)] p-5">
+              <button type="button" onClick={() => setShowRubricReuseDialog(false)} className="btn btn--outline">Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showRubricDialog ? (
+        <form action={saveRubricAction} className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-[var(--surface-1)] shadow-2xl">
+            <div className="relative flex items-center gap-3 border-b border-[var(--color-line)] px-5 py-4">
+              <button type="button" onClick={() => setShowRubricDialog(false)} className="absolute left-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--surface-2)]">
+                <X className="h-4 w-4" />
+              </button>
+              <h2 className="mx-auto text-xl font-black text-[var(--color-ink)]">Rubric</h2>
+              <div className="ms-auto">
+                <button type="submit" className="btn btn--primary">Save</button>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[var(--color-muted)]">Create rubric criteria and points.</p>
+
+              <input type="hidden" name="assignmentId" value={assignmentId ?? ""} />
+
+              <label className="mt-4 block space-y-2">
+                <span className="text-sm font-bold text-[var(--color-ink)]">Rubric name</span>
+                <input name="rubricName" className="input w-full bg-[var(--surface-2)]" placeholder="Rubric name" />
+              </label>
+
+              <div className="mt-4 space-y-3">
+                {criteria.map((c, idx) => (
+                  <div key={c.id} className="flex items-center gap-3">
+                    <input
+                      name="criterionDescription"
+                      className="input flex-1 bg-[var(--surface-2)]"
+                      placeholder="Criterion description"
+                      value={c.description}
+                      onChange={(e) => updateCriterion(c.id, { description: e.target.value })}
+                    />
+                    <input
+                      name="criterionPoints"
+                      className="input w-24 bg-[var(--surface-2)]"
+                      placeholder="Points"
+                      value={c.points}
+                      onChange={(e) => updateCriterion(c.id, { points: e.target.value })}
+                    />
+                    <button type="button" onClick={() => removeCriterion(c.id)} className="inline-flex items-center rounded-full border border-[var(--color-line)] bg-[var(--surface-2)] px-2 py-1 text-sm text-[var(--color-muted)]">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={addCriterion} className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--surface-2)] px-3 py-2 text-sm font-semibold">
+                    <Plus className="h-4 w-4" /> Add criterion
+                  </button>
+                  <button type="button" onClick={importFromSheetCsv} className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--surface-2)] px-3 py-2 text-sm">
+                    <Upload className="h-4 w-4" /> Import from Sheets (CSV)
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </form>
       ) : null}
