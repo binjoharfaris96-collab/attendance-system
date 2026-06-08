@@ -10,6 +10,7 @@ import {
   ClipboardList,
   FileQuestion,
   FileText,
+  FileUp,
   FolderPlus,
   HelpCircle,
   Italic,
@@ -23,8 +24,8 @@ import {
   Underline,
   Upload,
   Users,
-  Video,
   X,
+  Play,
 } from "lucide-react";
 
 import { createAssignment } from "@/app/actions/assignments";
@@ -400,7 +401,7 @@ export function AssignmentForm({
                 <p className="mb-5 text-sm font-black text-[var(--color-ink)]">Attach</p>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                   <AttachButton label="Drive" icon={<FileText className="h-5 w-5" />} onClick={() => setIsDrivePickerOpen(true)} />
-                  <AttachButton label="YouTube" icon={<Video className="h-5 w-5" />} onClick={() => handleLink("YouTube")} />
+                  <AttachButton label="YouTube" icon={<Play className="h-5 w-5" />} onClick={() => handleLink("YouTube")} />
                   <AttachButton label="Create" icon={<PlusCircle className="h-5 w-5" />} onClick={() => handleLink("Created file")} />
                   <AttachButton label="Upload" icon={<Upload className="h-5 w-5" />} onClick={() => handleCapture("")} />
                   <AttachButton label="Link" icon={<LinkIcon className="h-5 w-5" />} onClick={() => handleLink("Link")} />
