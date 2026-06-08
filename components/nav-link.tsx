@@ -9,12 +9,13 @@ import { t, type AppLanguage } from "@/lib/i18n";
 type NavLinkProps = {
   href: string;
   labelKey: string;
+  overrideLabel?: string;
   icon: string;
   badge?: number;
   lang?: AppLanguage;
 };
 
-export function NavLink({ href, labelKey, icon, badge, lang = "en" }: NavLinkProps) {
+export function NavLink({ href, labelKey, overrideLabel, icon, badge, lang = "en" }: NavLinkProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
@@ -49,7 +50,7 @@ export function NavLink({ href, labelKey, icon, badge, lang = "en" }: NavLinkPro
         }`}
         dangerouslySetInnerHTML={{ __html: icon }}
       />
-      <span className="min-w-0 flex-1 truncate">{t(labelKey, activeLang)}</span>
+      <span className="min-w-0 flex-1 truncate">{overrideLabel ?? t(labelKey, activeLang)}</span>
       {badge !== undefined && badge > 0 ? (
         <span className="ms-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500/95 px-1 text-[10px] font-bold leading-none text-white">
           {badge}
