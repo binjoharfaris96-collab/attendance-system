@@ -70,6 +70,7 @@ export async function createAnnouncementAction(formData: FormData) {
 
   try {
     const scheduledAt = scheduledAtParam ? new Date(scheduledAtParam).toISOString() : null;
+    const authorId = user.id;
     await createAnnouncement(
       title, 
       content, 
@@ -79,7 +80,7 @@ export async function createAnnouncementAction(formData: FormData) {
       attachmentName,
       null, // attachmentType
       scheduledAt,
-      user.id
+      authorId
     );
     revalidatePath("/student");
     revalidatePath("/teacher");
