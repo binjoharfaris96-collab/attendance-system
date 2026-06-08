@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import type { Client } from "@libsql/client";
+import type { Client, InStatement } from "@libsql/client";
 
 import {
   DEMO_EMAIL_DOMAIN,
@@ -409,7 +409,7 @@ export async function seedDemoDataIfNeeded(db: Client) {
   }
 
   // --- Attendance Events (45 school days of history, batched) ---
-  const attendanceBatch: { sql: string; args: unknown[] }[] = [];
+  const attendanceBatch: InStatement[] = [];
   for (const student of studentRecords) {
     const studentClassResult = await db.execute({
       sql: "SELECT class_name FROM students WHERE id = ?",
