@@ -7,6 +7,7 @@ import { DynamicPageTitle } from "@/components/dynamic-page-title";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopWeatherCard } from "@/components/top-weather-card";
+import { SwitchRoleButton } from "@/components/switch-role-button";
 import { requireSession } from "@/lib/auth";
 import { countPhoneDetections, countUnknownFaces } from "@/lib/db";
 import { createTranslator } from "@/lib/i18n";
@@ -136,6 +137,8 @@ export default async function DashboardLayout({
                 <circle cx="12" cy="12" r="3" />
               </svg>
             </Link>
+
+            <SwitchRoleButton currentRole={session.role} />
 
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--surface-1)_86%,transparent)] text-sm font-bold text-[var(--color-ink)]">
               {session.email.charAt(0).toUpperCase()}

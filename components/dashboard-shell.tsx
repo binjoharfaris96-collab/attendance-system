@@ -136,7 +136,7 @@ export function DashboardShell({
 
       <aside
         id="dashboard-sidebar"
-        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
+        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] rounded-[30px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
           isSidebarOpen ? "!translate-x-0" : "-translate-x-[calc(100%+1.25rem)] rtl:translate-x-[calc(100%+1.25rem)]"
         }`}
         style={{ touchAction: "pan-y" }}
