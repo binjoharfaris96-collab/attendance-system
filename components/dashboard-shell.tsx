@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t, type AppLanguage } from "@/lib/i18n";
 
 export function DashboardShell({
@@ -14,6 +14,7 @@ export function DashboardShell({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeLang, setActiveLang] = useState<AppLanguage>("en");
+  const sidebarRef = useRef<HTMLElement>(null);
 
   // ── Lang observer ──────────────────────────────────────────────
   useEffect(() => {
@@ -77,6 +78,37 @@ export function DashboardShell({
     };
   }, [isSidebarOpen]);
 
+  // ── Prevent sidebar wheel events from leaking to the main page ──
+  // overscroll-behavior:contain handles touch but NOT mouse-wheel in
+  // all browsers. A non-passive wheel listener is the only reliable fix.
+  useEffect(() => {
+    const aside = sidebarRef.current;
+    if (!aside) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Find the inner scrollable element (the nav inside the sidebar)
+      const scrollable =
+        (aside.querySelector("[data-sidebar-scroll]") as HTMLElement | null) ??
+        aside;
+
+      const { scrollTop, scrollHeight, clientHeight } = scrollable;
+      const atTop = scrollTop <= 0;
+      const atBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 1;
+
+      // Block the event from reaching the page when the sidebar
+      // is already at its scroll boundary in the direction being scrolled.
+      if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+        e.preventDefault();
+      }
+
+      // Always stop bubbling so the page never receives sidebar wheel events.
+      e.stopPropagation();
+    };
+
+    aside.addEventListener("wheel", handleWheel, { passive: false });
+    return () => aside.removeEventListener("wheel", handleWheel);
+  }, []);
+
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[var(--color-canvas)]">
       <div className="shell-glow-layer opacity-85" />
@@ -135,8 +167,9 @@ export function DashboardShell({
       </header>
 
       <aside
+        ref={sidebarRef}
         id="dashboard-sidebar"
-        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] rounded-[30px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
+        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] rounded-[30px] overflow-hidden overscroll-contain transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
           isSidebarOpen ? "!translate-x-0" : "-translate-x-[calc(100%+1.25rem)] rtl:translate-x-[calc(100%+1.25rem)]"
         }`}
         style={{ touchAction: "pan-y" }}
@@ -158,7 +191,7 @@ export function DashboardShell({
         />
       ) : null}
 
-      <main className="relative z-10 px-4 pb-10 pt-[112px] sm:px-6 lg:pl-[286px] lg:rtl:pl-6 lg:rtl:pr-[286px] lg:pr-6 lg:pt-[110px]">
+      <main className="relative z-10 px-4 pb-10 pt-[112px] sm:px-6 lg:px-6 lg:pt-[110px]">
         <div className="mx-auto w-full max-w-[1440px]">{children}</div>
       </main>
     </div>

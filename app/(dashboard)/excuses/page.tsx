@@ -9,8 +9,9 @@ import { formatDateTime } from "@/lib/time";
 
 export default async function ExcusesPage() {
   const session = await requireAdminRole();
-  const students = await listStudents(session.buildingId);
-  const excuses = await listExcuses(50, session.buildingId);
+  const isOwner = session.role === "owner";
+  const students = await listStudents(isOwner ? null : session.buildingId);
+  const excuses = await listExcuses(50, isOwner ? null : session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 

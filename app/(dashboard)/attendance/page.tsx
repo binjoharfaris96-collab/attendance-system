@@ -7,8 +7,9 @@ import { requireAdminRole } from "@/lib/auth";
 
 export default async function AttendancePage() {
   const session = await requireAdminRole();
-  const attendance = await listRecentAttendance(50, session.buildingId);
-  const students = await listStudents(session.buildingId);
+  const isOwner = session.role === "owner";
+  const attendance = await listRecentAttendance(50, isOwner ? null : session.buildingId);
+  const students = await listStudents(isOwner ? null : session.buildingId);
   const today = toAttendanceDate(new Date().toISOString());
   const studentPhotoById = Object.fromEntries(
     students.map((student) => [student.id, student.photoUrl]),

@@ -281,7 +281,8 @@ export async function createSession(email: string) {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: true,
+    // Only require HTTPS in production — allows local HTTP mobile testing
+    secure: process.env.NODE_ENV === "production",
   });
   console.log("COOKIE SET (Server Action):", email);
 }
@@ -293,7 +294,8 @@ export async function createSessionResponse(email: string, targetUrl: URL | stri
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: true,
+    // Only require HTTPS in production — allows local HTTP mobile testing
+    secure: process.env.NODE_ENV === "production",
   });
   console.log("COOKIE SET (NextResponse):", email);
 

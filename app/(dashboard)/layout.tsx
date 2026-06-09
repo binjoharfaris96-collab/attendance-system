@@ -88,6 +88,9 @@ export default async function DashboardLayout({
             <DynamicPageTitle initialLang={lang} />
           </div>
 
+          {/* Switch Role — always visible in topbar */}
+          <SwitchRoleButton currentRole={session.role} />
+
           <div className="hidden items-center gap-2 md:flex">
             <div className="hidden 2xl:block">
               <TopWeatherCard />
@@ -138,8 +141,6 @@ export default async function DashboardLayout({
               </svg>
             </Link>
 
-            <SwitchRoleButton currentRole={session.role} />
-
             <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-line)] bg-[color-mix(in_srgb,var(--surface-1)_86%,transparent)] text-sm font-bold text-[var(--color-ink)]">
               {session.email.charAt(0).toUpperCase()}
             </div>
@@ -169,7 +170,7 @@ export default async function DashboardLayout({
             </span>
           </Link>
 
-          <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pe-1" style={{ touchAction: "pan-y" }}>
+          <nav data-sidebar-scroll className="mt-4 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pe-1" style={{ touchAction: "pan-y" }}>
             {activeNavItems.map((item) => (
               <NavLink
                 key={item.href}
@@ -213,6 +214,7 @@ export default async function DashboardLayout({
           </nav>
 
           <div className="mt-4 border-t border-[var(--sidebar-border)] pt-4">
+            {/* Theme + Language toggles — only show in sidebar on mobile where topbar controls are hidden */}
             <div className="mb-4 grid grid-cols-2 gap-2 lg:hidden">
               <ThemeToggle initialTheme={initialTheme} className="w-full" />
               <LanguageToggle initialLanguage={lang} compact className="w-full px-3" />

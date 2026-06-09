@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
   const session = await requireAdminRole();
-  const students = await listStudents(session.buildingId);
+  // Owners see all students across all buildings; admins only see their building
+  const students = await listStudents(session.role === "owner" ? null : session.buildingId);
   const lang = await getAppLanguage();
   const t = createTranslator(lang);
 
