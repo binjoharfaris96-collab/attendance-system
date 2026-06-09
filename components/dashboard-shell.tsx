@@ -191,7 +191,7 @@ export function DashboardShell({
         />
       ) : null}
 
-      <main className="relative z-10 px-4 pb-10 pt-[112px] sm:px-6 lg:px-6 lg:pt-[110px]">
+      <main className="relative z-10 px-4 pb-10 pt-[112px] sm:px-6 lg:pl-[286px] lg:px-6 lg:pt-[110px]">
         <div className="mx-auto w-full max-w-[1440px]">{children}</div>
       </main>
     </div>
