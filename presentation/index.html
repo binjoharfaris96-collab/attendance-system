@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RollCall Studio — Project Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #060d1a;
+      --bg2: #0b1628;
+      --accent: #8ea4ff;
+      --accent2: #50d8ca;
+      --accent3: #f3b252;
+      --ink: #e8f2ff;
+      --muted: #7a94b0;
+      --line: rgba(142,164,255,0.15);
+      --card: rgba(15,28,50,0.72);
+      --glass: rgba(142,164,255,0.06);
+    }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+    }
+
+    /* ── Slide container ── */
+    .deck { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      transform: translateY(24px);
+      overflow: hidden;
+    }
+    .slide.active {
+      opacity: 1; pointer-events: all; transform: translateY(0);
+    }
+    .slide.exit {
+      opacity: 0; transform: translateY(-24px);
+    }
+
+    /* ── Background layers ── */
+    .bg-glow {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    }
+    .bg-glow::before {
+      content: '';
+      position: absolute; width: 700px; height: 700px;
+      top: -200px; left: -200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(142,164,255,0.18) 0%, transparent 70%);
+      animation: drift-a 18s ease-in-out infinite;
+    }
+    .bg-glow::after {
+      content: '';
+      position: absolute; width: 600px; height: 600px;
+      bottom: -180px; right: -180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(80,216,202,0.14) 0%, transparent 70%);
+      animation: drift-b 22s ease-in-out infinite;
+    }
+    .dots {
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background-image: radial-gradient(rgba(180,204,225,0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    @keyframes drift-a {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(80px, 60px) scale(1.1); }
+    }
+    @keyframes drift-b {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(-60px, -80px) scale(1.08); }
+    }
+
+    /* ── Content wrapper ── */
+    .content {
+      position: relative; z-index: 1;
+      flex: 1; display: flex; flex-direction: column;
+      padding: 3rem 5rem;
+    }
+
+    /* ── Navigation ── */
+    .nav-bar {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      z-index: 100;
+      display: flex; align-items: center; gap: 1rem;
+      background: rgba(11,22,40,0.86);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.6rem 1.2rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+    .nav-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: var(--glass);
+      color: var(--ink);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      transition: all 0.18s ease;
+    }
+    .nav-btn:hover { background: rgba(142,164,255,0.18); border-color: var(--accent); }
+    .slide-counter { font-size: 0.78rem; color: var(--muted); font-weight: 600; min-width: 60px; text-align: center; }
+    .progress-dots { display: flex; gap: 6px; align-items: center; }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); opacity: 0.4;
+      transition: all 0.25s ease; cursor: pointer;
+    }
+    .dot.active { opacity: 1; background: var(--accent); width: 18px; border-radius: 3px; }
+
+    /* ── Slide 1: Title ── */
+    #slide-1 .content {
+      justify-content: center; align-items: center; text-align: center;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(142,164,255,0.1);
+      border: 1px solid rgba(142,164,255,0.3);
+      border-radius: 999px; padding: 0.4rem 1rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 1.8rem;
+    }
+    .badge-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    .title-main {
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 70%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.2rem;
+    }
+    .title-sub {
+      font-size: 1.15rem; color: var(--muted); max-width: 540px; line-height: 1.6;
+      margin-bottom: 3rem;
+    }
+    .title-chips {
+      display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center;
+    }
+    .chip {
+      display: flex; align-items: center; gap: 0.45rem;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .chip-icon { font-size: 0.9rem; }
+
+    /* ── Section header ── */
+    .section-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+    .section-heading {
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.8rem;
+    }
+    .section-heading span { color: var(--accent); }
+    .section-desc { color: var(--muted); font-size: 1rem; line-height: 1.6; max-width: 520px; margin-bottom: 2.5rem; }
+
+    /* ── Cards grid ── */
+    .cards-grid { display: grid; gap: 1rem; }
+    .cards-grid-2 { grid-template-columns: 1fr 1fr; }
+    .cards-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .cards-grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 1.5rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: 0; opacity: 0;
+      background: linear-gradient(135deg, rgba(142,164,255,0.08), transparent);
+      transition: opacity 0.2s;
+    }
+    .card:hover { border-color: rgba(142,164,255,0.4); transform: translateY(-2px); }
+    .card:hover::before { opacity: 1; }
+
+    .card-icon {
+      font-size: 1.8rem; margin-bottom: 0.75rem;
+      display: block;
+    }
+    .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Accent card ── */
+    .card-accent {
+      background: linear-gradient(135deg, rgba(142,164,255,0.15), rgba(80,216,202,0.08));
+      border-color: rgba(142,164,255,0.35);
+    }
+    .card-amber { background: linear-gradient(135deg, rgba(243,178,82,0.12), rgba(243,178,82,0.04)); border-color: rgba(243,178,82,0.3); }
+    .card-teal { background: linear-gradient(135deg, rgba(80,216,202,0.12), rgba(80,216,202,0.04)); border-color: rgba(80,216,202,0.3); }
+    .card-red { background: linear-gradient(135deg, rgba(251,113,133,0.12), rgba(251,113,133,0.04)); border-color: rgba(251,113,133,0.3); }
+    .card-purple { background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04)); border-color: rgba(167,139,250,0.3); }
+    .card-green { background: linear-gradient(135deg, rgba(74,222,128,0.12), rgba(74,222,128,0.04)); border-color: rgba(74,222,128,0.3); }
+
+    /* ── Two-col layout ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; flex: 1; }
+    .two-col-left { display: flex; flex-direction: column; }
+    .two-col-right { display: flex; flex-direction: column; gap: 0.85rem; }
+
+    /* ── List items ── */
+    .feature-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 0.9rem 1rem;
+    }
+    .feature-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .feature-text { font-size: 0.85rem; line-height: 1.4; }
+    .feature-text strong { display: block; font-weight: 700; margin-bottom: 0.1rem; }
+    .feature-text span { color: var(--muted); }
+
+    /* ── Tech stack pills ── */
+    .tech-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+    .tech-pill {
+      display: flex; align-items: center; gap: 0.4rem;
+      border-radius: 999px; padding: 0.4rem 0.9rem;
+      font-size: 0.76rem; font-weight: 600;
+      border: 1px solid var(--line);
+      background: var(--card);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .tech-pill.blue { border-color: rgba(142,164,255,0.4); color: var(--accent); }
+    .tech-pill.teal { border-color: rgba(80,216,202,0.4); color: var(--accent2); }
+    .tech-pill.amber { border-color: rgba(243,178,82,0.4); color: var(--accent3); }
+    .tech-pill.green { border-color: rgba(74,222,128,0.4); color: #4ade80; }
+    .tech-pill.red { border-color: rgba(251,113,133,0.4); color: #fb7185; }
+    .tech-pill.purple { border-color: rgba(167,139,250,0.4); color: #a78bfa; }
+
+    /* ── Stats strip ── */
+    .stat-strip { display: flex; gap: 1.5rem; margin-top: 2rem; }
+    .stat-box {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 1.2rem 1.6rem; text-align: center; flex: 1;
+    }
+    .stat-num { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    .stat-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; margin-top: 0.3rem; }
+
+    /* ── Architecture diagram ── */
+    .arch-box {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 1.2rem 1.4rem;
+      display: flex; align-items: center; gap: 0.9rem;
+    }
+    .arch-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .arch-label { font-size: 0.88rem; font-weight: 700; }
+    .arch-sub { font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
+    .arch-arrow { text-align: center; font-size: 1.2rem; color: var(--muted); }
+
+    /* ── Timeline ── */
+    .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+    .timeline::before {
+      content: ''; position: absolute; left: 1.1rem; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%);
+      border-radius: 2px;
+    }
+    .tl-item { display: flex; gap: 1.2rem; padding: 0.9rem 0; position: relative; }
+    .tl-dot {
+      width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid var(--accent);
+      background: var(--bg); z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; color: var(--accent); font-weight: 700;
+    }
+    .tl-content { font-size: 0.86rem; }
+    .tl-title { font-weight: 700; }
+    .tl-desc { color: var(--muted); margin-top: 0.15rem; font-size: 0.8rem; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 1rem 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: #c9e0ff;
+      overflow: hidden;
+    }
+    .code-keyword { color: #a78bfa; }
+    .code-string { color: #86efac; }
+    .code-comment { color: #475569; }
+    .code-fn { color: var(--accent2); }
+
+    /* ── Big number ── */
+    .big-number {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Roles table ── */
+    .roles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .role-card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 16px; padding: 1.1rem 1.2rem;
+    }
+    .role-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .role-tag {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 0.2rem 0.5rem;
+      border-radius: 999px; border: 1px solid currentColor; opacity: 0.8;
+    }
+    .role-perms { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; }
+    .role-perms li { font-size: 0.78rem; color: var(--muted); display: flex; gap: 0.4rem; }
+    .role-perms li::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+    /* ── Horizontal divider ── */
+    .divider { width: 48px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); margin: 0.8rem 0 1.4rem; }
+
+    /* ── Highlight bar ── */
+    .highlight-bar {
+      background: linear-gradient(135deg, rgba(142,164,255,0.12), rgba(80,216,202,0.06));
+      border: 1px solid rgba(142,164,255,0.25); border-radius: 14px;
+      padding: 1rem 1.4rem;
+      display: flex; align-items: center; gap: 0.8rem;
+      font-size: 0.9rem; font-weight: 600;
+    }
+
+    /* ── Thank you slide ── */
+    #slide-10 .content { justify-content: center; align-items: center; text-align: center; }
+    .thank-you {
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 900; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.05; margin-bottom: 1.2rem;
+    }
+
+    /* ── Keyboard hint ── */
+    .key-hint {
+      position: fixed; top: 1.5rem; right: 1.5rem; z-index: 100;
+      font-size: 0.68rem; color: var(--muted);
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    kbd {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 5px; padding: 0.15rem 0.4rem;
+      font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Slide number ── */
+    .slide-num {
+      position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100;
+      font-size: 0.7rem; font-weight: 600; color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Animated entrance ── */
+    .animate-up {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .slide.active .animate-up { opacity: 1; transform: translateY(0); }
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+    .delay-6 { transition-delay: 0.6s; }
+
+    /* ── Flow diagram ── */
+    .flow {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    }
+    .flow-box {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 0.65rem 1rem;
+      font-size: 0.8rem; font-weight: 600; text-align: center;
+    }
+    .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+    /* Wide gutter adjust for content */
+    @media (max-height: 700px) {
+      .content { padding: 1.5rem 4rem; }
+      .section-heading { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="slide-num" id="slide-num">01 / 10</div>
+<div class="key-hint"><kbd>←</kbd><kbd>→</kbd> to navigate &nbsp;·&nbsp; <kbd>Space</kbd> to advance</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 1 — TITLE
+══════════════════════════════════════════════════════════════════ -->
+<div class="deck">
+
+<div class="slide active" id="slide-1">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="badge animate-up"><span class="badge-dot"></span> School Project Presentation</div>
+    <h1 class="title-main animate-up delay-1">RollCall Studio</h1>
+    <p class="title-sub animate-up delay-2">
+      A full-stack smart attendance management system built with modern web technologies —
+      featuring face recognition, QR codes, live monitoring, and multi-role dashboards.
+    </p>
+    <div class="title-chips animate-up delay-3">
+      <div class="chip"><span class="chip-icon">🎓</span> School Attendance</div>
+      <div class="chip"><span class="chip-icon">👁️</span> Face Recognition</div>
+      <div class="chip"><span class="chip-icon">📱</span> QR & NFC</div>
+      <div class="chip"><span class="chip-icon">📊</span> Live Dashboard</div>
+      <div class="chip"><span class="chip-icon">🌍</span> Arabic + English</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 2 — PROBLEM
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="two-col">
+      <div class="two-col-left">
+        <p class="section-eyebrow animate-up">The Problem</p>
+        <h2 class="section-heading animate-up delay-1">Traditional attendance is <span>slow & error-prone</span></h2>
+        <div class="divider animate-up delay-2"></div>
+        <p class="section-desc animate-up delay-2">
+          Schools still rely on paper-based roll calls, manual registers, and spreadsheets —
+          wasting valuable class time and leading to inaccurate records.
+        </p>
+        <div class="stat-strip animate-up delay-3">
+          <div class="stat-box">
+            <div class="stat-num" style="color:#fb7185">15+</div>
+            <div class="stat-label">Minutes wasted per class</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:#fbbf24">40%</div>
+            <div class="stat-label">Record errors in manual logs</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:#a78bfa">0</div>
+            <div class="stat-label">Real-time parent visibility</div>
+          </div>
+        </div>
+      </div>
+      <div class="two-col-right">
+        <div class="feature-item animate-up delay-2" style="border-color:rgba(251,113,133,0.3)">
+          <span class="feature-icon">📝</span>
+          <div class="feature-text">
+            <strong>Paper Roll Calls</strong>
+            <span>Slow, hard to archive, easily lost or forged</span>
+          </div>
+        </div>
+        <div class="feature-item animate-up delay-3" style="border-color:rgba(251,113,133,0.3)">
+          <span class="feature-icon">📊</span>
+          <div class="feature-text">
+            <strong>Manual Spreadsheets</strong>
+            <span>No automation, no alerts, no live data</span>
+          </div>
+        </div>
+        <div class="feature-item animate-up delay-4" style="border-color:rgba(251,113,133,0.3)">
+          <span class="feature-icon">👨‍👩‍👧</span>
+          <div class="feature-text">
+            <strong>Parents Left in the Dark</strong>
+            <span>No way for parents to track their child's attendance</span>
+          </div>
+        </div>
+        <div class="feature-item animate-up delay-5" style="border-color:rgba(251,113,133,0.3)">
+          <span class="feature-icon">🔍</span>
+          <div class="feature-text">
+            <strong>No Analytics or Reports</strong>
+            <span>Impossible to spot trends or at-risk students quickly</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 3 — SOLUTION OVERVIEW
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <p class="section-eyebrow animate-up">Our Solution</p>
+    <h2 class="section-heading animate-up delay-1">One platform. <span>Every role. Every feature.</span></h2>
+    <div class="divider animate-up delay-2"></div>
+    <div class="cards-grid cards-grid-3 animate-up delay-2">
+      <div class="card card-accent">
+        <span class="card-icon">👁️</span>
+        <div class="card-title">AI Face Recognition</div>
+        <div class="card-desc">Automatically mark attendance using a webcam — no manual input required</div>
+      </div>
+      <div class="card card-teal">
+        <span class="card-icon">📱</span>
+        <div class="card-title">QR & NFC Check-in</div>
+        <div class="card-desc">Students scan their QR code or tap an NFC tag to check in instantly</div>
+      </div>
+      <div class="card card-amber">
+        <span class="card-icon">📊</span>
+        <div class="card-title">Live Dashboard</div>
+        <div class="card-desc">Real-time attendance statistics, charts, and attendance trends for admins</div>
+      </div>
+      <div class="card card-purple">
+        <span class="card-icon">👨‍👩‍👧</span>
+        <div class="card-title">Parent Portal</div>
+        <div class="card-desc">Parents can view their child's attendance record and receive alerts</div>
+      </div>
+      <div class="card card-green">
+        <span class="card-icon">🎓</span>
+        <div class="card-title">Student Portal</div>
+        <div class="card-desc">Students view their own schedule, attendance, and class assignments</div>
+      </div>
+      <div class="card card-red">
+        <span class="card-icon">📡</span>
+        <div class="card-title">Exam Monitor</div>
+        <div class="card-desc">AI-powered phone detection and cheating alerts during exams in real-time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 4 — TECH STACK
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="two-col">
+      <div class="two-col-left">
+        <p class="section-eyebrow animate-up">Technology</p>
+        <h2 class="section-heading animate-up delay-1">Built with <span>modern tools</span></h2>
+        <div class="divider animate-up delay-2"></div>
+        <p class="section-desc animate-up delay-2">
+          The system uses a production-grade stack ensuring speed, security, and scalability.
+          Every part was carefully chosen for performance and developer experience.
+        </p>
+        <div class="tech-row animate-up delay-3">
+          <div class="tech-pill blue">⚛️ Next.js 16</div>
+          <div class="tech-pill blue">🔵 React 19</div>
+          <div class="tech-pill blue">📘 TypeScript</div>
+          <div class="tech-pill teal">🗄️ SQLite</div>
+          <div class="tech-pill teal">🔗 Turso DB</div>
+          <div class="tech-pill amber">🎨 Tailwind CSS</div>
+          <div class="tech-pill green">🌐 Vercel</div>
+          <div class="tech-pill purple">🧠 face-api.js</div>
+          <div class="tech-pill red">📷 WebRTC</div>
+          <div class="tech-pill amber">📦 QR Code API</div>
+        </div>
+      </div>
+      <div class="two-col-right animate-up delay-3">
+        <div class="arch-box">
+          <div class="arch-icon">🌐</div>
+          <div>
+            <div class="arch-label">Frontend (Browser)</div>
+            <div class="arch-sub">React 19 + Next.js App Router + Tailwind CSS</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-box">
+          <div class="arch-icon">⚙️</div>
+          <div>
+            <div class="arch-label">Backend (Server)</div>
+            <div class="arch-sub">Next.js Server Actions + API Routes + Sessions</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-box">
+          <div class="arch-icon">🗄️</div>
+          <div>
+            <div class="arch-label">Database</div>
+            <div class="arch-sub">SQLite (local) · Turso (cloud) — auto-migrated</div>
+          </div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-box">
+          <div class="arch-icon">🧠</div>
+          <div>
+            <div class="arch-label">AI Layer</div>
+            <div class="arch-sub">face-api.js · SSD MobileNet · FaceNet embeddings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 5 — USER ROLES
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <p class="section-eyebrow animate-up">Access Control</p>
+    <h2 class="section-heading animate-up delay-1">5 roles. <span>Each sees only what they need.</span></h2>
+    <div class="divider animate-up delay-2"></div>
+    <div class="roles-grid animate-up delay-2">
+      <div class="role-card" style="border-color:rgba(142,164,255,0.35)">
+        <div class="role-header">
+          <span style="font-size:1.3rem">👑</span>
+          <div>
+            <div style="font-weight:700">Owner</div>
+            <div class="role-tag" style="color:var(--accent)">Super Admin</div>
+          </div>
+        </div>
+        <ul class="role-perms">
+          <li>Full system control</li>
+          <li>Manage buildings & admins</li>
+          <li>View all reports & analytics</li>
+        </ul>
+      </div>
+      <div class="role-card" style="border-color:rgba(80,216,202,0.35)">
+        <div class="role-header">
+          <span style="font-size:1.3rem">🛠️</span>
+          <div>
+            <div style="font-weight:700">Admin</div>
+            <div class="role-tag" style="color:var(--accent2)">School Staff</div>
+          </div>
+        </div>
+        <ul class="role-perms">
+          <li>Manage students & teachers</li>
+          <li>Run face recognition & scan</li>
+          <li>Export data & send announcements</li>
+        </ul>
+      </div>
+      <div class="role-card" style="border-color:rgba(167,139,250,0.35)">
+        <div class="role-header">
+          <span style="font-size:1.3rem">👩‍🏫</span>
+          <div>
+            <div style="font-weight:700">Teacher</div>
+            <div class="role-tag" style="color:#a78bfa">Educator</div>
+          </div>
+        </div>
+        <ul class="role-perms">
+          <li>View assigned classes</li>
+          <li>Record & manage assignments</li>
+          <li>File misbehavior reports</li>
+        </ul>
+      </div>
+      <div class="role-card" style="border-color:rgba(74,222,128,0.35)">
+        <div class="role-header">
+          <span style="font-size:1.3rem">🎒</span>
+          <div>
+            <div style="font-weight:700">Student</div>
+            <div class="role-tag" style="color:#4ade80">Learner</div>
+          </div>
+        </div>
+        <ul class="role-perms">
+          <li>View own attendance record</li>
+          <li>See class schedule & assignments</li>
+          <li>QR code self check-in</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight-bar animate-up delay-4" style="margin-top:1rem">
+      <span>👨‍👩‍👧</span>
+      <span><strong>Parent Role:</strong> Real-time child attendance tracker, excuse submissions, announcements feed — accessible from any device</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 6 — KEY FEATURES DEEP DIVE
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <p class="section-eyebrow animate-up">Core Features</p>
+    <h2 class="section-heading animate-up delay-1">What makes it <span>powerful</span></h2>
+    <div class="divider animate-up delay-2"></div>
+    <div class="cards-grid" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:0.8rem;" class="animate-up delay-2">
+      <div class="card animate-up delay-2">
+        <span class="card-icon">🎭</span>
+        <div class="card-title">Face Recognition</div>
+        <div class="card-desc">SSD MobileNet AI model runs in-browser — no data leaves the device</div>
+      </div>
+      <div class="card animate-up delay-3">
+        <span class="card-icon">📅</span>
+        <div class="card-title">Weekly Schedule Builder</div>
+        <div class="card-desc">Drag-and-drop timetable builder per class with subject assignments</div>
+      </div>
+      <div class="card animate-up delay-2">
+        <span class="card-icon">📣</span>
+        <div class="card-title">Announcements</div>
+        <div class="card-desc">Broadcast messages to all students, parents, or specific classes</div>
+      </div>
+      <div class="card animate-up delay-3">
+        <span class="card-icon">⚠️</span>
+        <div class="card-title">Behavior Tracking</div>
+        <div class="card-desc">Teachers log misbehavior incidents; admins track history per student</div>
+      </div>
+      <div class="card animate-up delay-4">
+        <span class="card-icon">📤</span>
+        <div class="card-title">Data Export</div>
+        <div class="card-desc">Export attendance to CSV / Excel for any date range per class</div>
+      </div>
+      <div class="card animate-up delay-4">
+        <span class="card-icon">🌙</span>
+        <div class="card-title">Dark / Light Mode</div>
+        <div class="card-desc">Full theme toggle with persistence, plus RTL Arabic language support</div>
+      </div>
+      <div class="card animate-up delay-5">
+        <span class="card-icon">📍</span>
+        <div class="card-title">Excuse Management</div>
+        <div class="card-desc">Formal absence excuse requests reviewed and approved by admins</div>
+      </div>
+      <div class="card animate-up delay-5">
+        <span class="card-icon">🔒</span>
+        <div class="card-title">Secure Auth</div>
+        <div class="card-desc">Signed HTTP-only session cookies — no JWT exposure in localStorage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 7 — FACE RECOGNITION & EXAM MONITOR
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="two-col">
+      <div class="two-col-left">
+        <p class="section-eyebrow animate-up">AI Features</p>
+        <h2 class="section-heading animate-up delay-1">Intelligence <span>built in</span></h2>
+        <div class="divider animate-up delay-2"></div>
+        <div class="feature-list animate-up delay-2">
+          <div class="feature-item" style="border-color:rgba(142,164,255,0.3)">
+            <span class="feature-icon">📸</span>
+            <div class="feature-text">
+              <strong>Live Face Detection</strong>
+              <span>Webcam feed scanned in real-time using SSD MobileNet — students are recognised automatically</span>
+            </div>
+          </div>
+          <div class="feature-item" style="border-color:rgba(80,216,202,0.3)">
+            <span class="feature-icon">🧬</span>
+            <div class="feature-text">
+              <strong>128-D Face Embeddings</strong>
+              <span>Each student's face stored as a vector — compared with Euclidean distance matching</span>
+            </div>
+          </div>
+          <div class="feature-item" style="border-color:rgba(243,178,82,0.3)">
+            <span class="feature-icon">📵</span>
+            <div class="feature-text">
+              <strong>Phone Detection in Exams</strong>
+              <span>AI flags when a student's phone is visible during exam sessions — admin gets instant alert</span>
+            </div>
+          </div>
+          <div class="feature-item" style="border-color:rgba(251,113,133,0.3)">
+            <span class="feature-icon">👤</span>
+            <div class="feature-text">
+              <strong>Unknown Face Alerts</strong>
+              <span>Any face not in the student database triggers a warning badge in the admin panel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="two-col-right animate-up delay-3">
+        <div style="background:rgba(0,0,0,0.3); border:1px solid var(--line); border-radius:18px; padding:1.4rem; font-size:0.82rem; line-height:1.8;">
+          <div style="color:var(--muted); font-size:0.68rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:0.8rem;">AI Recognition Flow</div>
+          <div class="flow" style="flex-direction:column; gap:0.5rem;">
+            <div class="flow-box" style="border-color:rgba(142,164,255,0.3)">🎥 Webcam captures frame</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box" style="border-color:rgba(80,216,202,0.3)">🔍 SSD MobileNet detects faces</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box" style="border-color:rgba(167,139,250,0.3)">🧬 FaceNet generates 128-D vector</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box" style="border-color:rgba(243,178,82,0.3)">📏 Euclidean distance comparison</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-box" style="border-color:rgba(74,222,128,0.3)">✅ Match found → Attendance marked</div>
+          </div>
+        </div>
+        <div class="highlight-bar" style="margin-top:0.8rem">
+          <span>🔐</span>
+          <span style="font-size:0.82rem">All AI runs <strong>100% in-browser</strong> — no face images are ever uploaded to any server</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 8 — DATABASE & ARCHITECTURE
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <p class="section-eyebrow animate-up">Architecture</p>
+    <h2 class="section-heading animate-up delay-1">How the <span>system is structured</span></h2>
+    <div class="divider animate-up delay-2"></div>
+    <div class="two-col animate-up delay-2" style="align-items:start; gap:2rem;">
+      <div>
+        <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.8rem;">Database Tables</div>
+        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+          <div class="code-block">
+<span class="code-keyword">TABLE</span> students<br>
+&nbsp;&nbsp;id · student_code · full_name<br>
+&nbsp;&nbsp;class_name · face_descriptor<br><br>
+<span class="code-keyword">TABLE</span> attendance_logs<br>
+&nbsp;&nbsp;id · student_id · check_in_time<br>
+&nbsp;&nbsp;method · status<br><br>
+<span class="code-keyword">TABLE</span> classes<br>
+&nbsp;&nbsp;id · name · teacher_id · building<br><br>
+<span class="code-keyword">TABLE</span> announcements<br>
+&nbsp;&nbsp;id · title · body · target_role
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.7rem;">
+        <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.1rem;">Request Flow</div>
+        <div class="arch-box">
+          <div class="arch-icon">📱</div>
+          <div>
+            <div class="arch-label">Client (Browser / Mobile)</div>
+            <div class="arch-sub">React components · WebRTC camera · QR scanner</div>
+          </div>
+        </div>
+        <div class="arch-arrow" style="text-align:left; padding-left:1.4rem">↕ HTTPS</div>
+        <div class="arch-box">
+          <div class="arch-icon">⚙️</div>
+          <div>
+            <div class="arch-label">Next.js Server (Edge / Node)</div>
+            <div class="arch-sub">Server Actions · API Routes · Session Auth</div>
+          </div>
+        </div>
+        <div class="arch-arrow" style="text-align:left; padding-left:1.4rem">↕ libsql</div>
+        <div class="arch-box">
+          <div class="arch-icon">🗄️</div>
+          <div>
+            <div class="arch-label">Turso SQLite (Cloud)</div>
+            <div class="arch-sub">Global edge replicas · auto-synced · zero config</div>
+          </div>
+        </div>
+        <div class="highlight-bar" style="font-size:0.8rem;">
+          <span>🚀</span>
+          <span>Deployed on <strong>Vercel Edge Network</strong> for global low-latency access</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 9 — DEVELOPMENT JOURNEY
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-9">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="two-col" style="align-items:start;">
+      <div>
+        <p class="section-eyebrow animate-up">Development</p>
+        <h2 class="section-heading animate-up delay-1">Built step <span>by step</span></h2>
+        <div class="divider animate-up delay-2"></div>
+        <div class="timeline animate-up delay-2">
+          <div class="tl-item">
+            <div class="tl-dot">1</div>
+            <div class="tl-content">
+              <div class="tl-title">Project Planning & Design</div>
+              <div class="tl-desc">Defined roles, features, and database schema. Designed the UI system and dark theme.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">2</div>
+            <div class="tl-content">
+              <div class="tl-title">Auth & Core Dashboard</div>
+              <div class="tl-desc">Built secure session login, sidebar navigation, and the main admin dashboard.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">3</div>
+            <div class="tl-content">
+              <div class="tl-title">Student & Attendance System</div>
+              <div class="tl-desc">Roster management, QR code generation, check-in logging, and attendance logs.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">4</div>
+            <div class="tl-content">
+              <div class="tl-title">AI Face Recognition</div>
+              <div class="tl-desc">Integrated face-api.js — live detection, face enrollment, and auto check-in.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">5</div>
+            <div class="tl-content">
+              <div class="tl-title">Teacher, Student & Parent Portals</div>
+              <div class="tl-desc">Built role-specific dashboards — assignments, schedules, excuses, announcements.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot">6</div>
+            <div class="tl-content">
+              <div class="tl-title">Exam Monitor + Multilingual</div>
+              <div class="tl-desc">Added phone-detection AI, Arabic RTL support, and deployed to Vercel cloud.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:1rem;" class="animate-up delay-3">
+        <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.2rem;">By the Numbers</div>
+        <div class="cards-grid cards-grid-2" style="gap:0.7rem;">
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--accent)">20+</div>
+            <div class="stat-label">Pages & Routes</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--accent2)">5</div>
+            <div class="stat-label">User Roles</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:var(--accent3)">3</div>
+            <div class="stat-label">AI Models Used</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" style="color:#a78bfa">2</div>
+            <div class="stat-label">Languages (AR/EN)</div>
+          </div>
+        </div>
+        <div class="highlight-bar" style="font-size:0.82rem; margin-top:0.4rem;">
+          <span>💻</span>
+          <span>Written entirely in <strong>TypeScript</strong> with full type safety end-to-end</span>
+        </div>
+        <div class="highlight-bar" style="font-size:0.82rem; border-color:rgba(80,216,202,0.25); background:linear-gradient(135deg,rgba(80,216,202,0.08),rgba(80,216,202,0.03))">
+          <span>🌍</span>
+          <span>Live on <strong>Vercel</strong> — accessible from any device, anywhere in the world</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SLIDE 10 — THANK YOU
+══════════════════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-10">
+  <div class="bg-glow"></div>
+  <div class="dots"></div>
+  <div class="content">
+    <div class="badge animate-up"><span class="badge-dot"></span> End of Presentation</div>
+    <h1 class="thank-you animate-up delay-1">Thank You</h1>
+    <p class="title-sub animate-up delay-2" style="max-width:480px;">
+      RollCall Studio — A complete, intelligent school attendance system built from scratch with modern web technologies.
+    </p>
+    <div class="title-chips animate-up delay-3">
+      <div class="chip"><span class="chip-icon">⚛️</span> Next.js 16</div>
+      <div class="chip"><span class="chip-icon">🧠</span> face-api.js AI</div>
+      <div class="chip"><span class="chip-icon">🗄️</span> Turso SQLite</div>
+      <div class="chip"><span class="chip-icon">🌍</span> Vercel Deploy</div>
+      <div class="chip"><span class="chip-icon">🔒</span> Secure Sessions</div>
+    </div>
+    <div style="margin-top:2.5rem;" class="animate-up delay-4">
+      <div style="font-size:0.78rem; color:var(--muted); font-weight:600; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.5rem;">Questions & Discussion</div>
+      <div style="font-size:1.1rem; color:var(--ink); font-weight:600;">Happy to walk through any part of the system 🎓</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .deck -->
+
+<!-- ── Navigation ── -->
+<nav class="nav-bar">
+  <button class="nav-btn" id="btn-prev" title="Previous (←)">&#8592;</button>
+  <div class="progress-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 10</span>
+  <button class="nav-btn" id="btn-next" title="Next (→)">&#8594;</button>
+</nav>
+
+<script>
+  const TOTAL = 10;
+  let current = 1;
+  let animating = false;
+
+  const slides = () => document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const slideNum = document.getElementById('slide-num');
+
+  // Build dots
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    if (animating || n === current) return;
+    animating = true;
+    const prev = document.getElementById('slide-' + current);
+    const next = document.getElementById('slide-' + n);
+
+    prev.classList.add('exit');
+    setTimeout(() => {
+      prev.classList.remove('active', 'exit');
+      next.classList.add('active');
+      current = n;
+      updateUI();
+      setTimeout(() => { animating = false; }, 650);
+    }, 300);
+  }
+
+  function updateUI() {
+    counter.textContent = current + ' / ' + TOTAL;
+    slideNum.textContent = String(current).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i + 1 === current);
+    });
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => goTo(Math.min(current + 1, TOTAL)));
+  document.getElementById('btn-prev').addEventListener('click', () => goTo(Math.max(current - 1, 1)));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); goTo(Math.min(current + 1, TOTAL)); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(Math.max(current - 1, 1)); }
+    if (e.key === 'Home') goTo(1);
+    if (e.key === 'End') goTo(TOTAL);
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? goTo(Math.min(current + 1, TOTAL)) : goTo(Math.max(current - 1, 1)); }
+  });
+</script>
+</body>
+</html>

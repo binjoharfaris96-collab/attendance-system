@@ -166,7 +166,7 @@ export default async function DashboardLayout({
             </span>
           </Link>
 
-          <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto pe-1">
+          <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pe-1" style={{ touchAction: "pan-y" }}>
             {activeNavItems.map((item) => (
               <NavLink
                 key={item.href}

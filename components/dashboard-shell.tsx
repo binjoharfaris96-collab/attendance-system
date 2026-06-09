@@ -15,6 +15,7 @@ export function DashboardShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeLang, setActiveLang] = useState<AppLanguage>("en");
 
+  // ── Lang observer ──────────────────────────────────────────────
   useEffect(() => {
     const updateLangFromHtml = () => {
       const htmlLang = document.documentElement.lang === "ar" ? "ar" : "en";
@@ -31,6 +32,51 @@ export function DashboardShell({
 
     return () => observer.disconnect();
   }, []);
+
+  // ── Scroll lock: freeze body when sidebar is open on mobile ────
+  // Uses position:fixed technique — the only method that reliably
+  // blocks touch-scroll on iOS Safari as well as Android Chrome.
+  useEffect(() => {
+    // Only apply on mobile/tablet (sidebar is an overlay below lg breakpoint)
+    if (typeof window === "undefined") return;
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (isDesktop) return;
+
+    if (isSidebarOpen) {
+      // Save current scroll position, then freeze body
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body and scroll position
+      const top = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      if (top) {
+        window.scrollTo(0, -parseInt(top, 10));
+      }
+    }
+
+    return () => {
+      // Safety cleanup if component unmounts mid-open
+      const top = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      if (top) {
+        window.scrollTo(0, -parseInt(top, 10));
+      }
+    };
+  }, [isSidebarOpen]);
+
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[var(--color-canvas)]">
       <div className="shell-glow-layer opacity-85" />
@@ -90,9 +136,10 @@ export function DashboardShell({
 
       <aside
         id="dashboard-sidebar"
-        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
+        className={`fixed bottom-4 left-4 rtl:left-auto rtl:right-4 top-[92px] z-50 w-[248px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out lg:left-6 lg:rtl:left-auto lg:rtl:right-6 lg:top-[98px] lg:!translate-x-0 ${
           isSidebarOpen ? "!translate-x-0" : "-translate-x-[calc(100%+1.25rem)] rtl:translate-x-[calc(100%+1.25rem)]"
         }`}
+        style={{ touchAction: "pan-y" }}
         onClickCapture={(event) => {
           if ((event.target as HTMLElement).closest("a")) {
             setIsSidebarOpen(false);

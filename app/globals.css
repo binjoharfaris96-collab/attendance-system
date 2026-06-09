@@ -1043,3 +1043,19 @@ select.input option {
     font-size: 0.84rem;
   }
 }
+
+/* ── Mobile sidebar scroll fix ──────────────────────────────────────────────
+   Prevents touch scroll inside the fixed sidebar overlay from leaking to
+   the background page on iOS Safari and Android Chrome.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  #dashboard-sidebar {
+    -webkit-overflow-scrolling: touch;   /* iOS momentum scroll */
+    overscroll-behavior: contain;        /* stop scroll chaining to body */
+  }
+
+  #dashboard-sidebar nav {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
